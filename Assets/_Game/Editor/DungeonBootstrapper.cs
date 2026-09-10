@@ -24,6 +24,8 @@ namespace DungeonCrawler.EditorTools
         private const string PlayerPrefabPath = "Assets/_Game/Prefabs/Player.prefab";
         private const string ScenePath = "Assets/_Game/Scenes/Level_01.unity";
         private const string InputActionsPath = "Assets/InputSystem_Actions.inputactions";
+        private const string PlayerArtDir = "Assets/_Game/Art/Player";
+        private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
         // room layout in world units, camera fits the room on its own
         private static readonly Vector2 RoomSize = new Vector2(17f, 10f);
@@ -129,6 +131,17 @@ namespace DungeonCrawler.EditorTools
 
             Selection.activeObject = room1.gameObject;
             Debug.Log("Built Level_01. Hit play, WASD to move, red doorway on the left switches rooms.");
+        }
+
+        // refreshes the player prefab (art, components) without rebuilding the whole level
+        [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
+        public static void UpdatePlayerPrefab()
+        {
+            Sprite square = EnsureSquareSprite();
+            EnsurePlayerPrefab(square);
+            EnsurePlayerPrefabComponents();
+            AssetDatabase.SaveAssets();
+            Debug.Log("Player prefab updated");
         }
 
         [MenuItem("Tools/Dungeon/Add Room To Scene", priority = 1)]
@@ -382,8 +395,88 @@ namespace DungeonCrawler.EditorTools
             bool changed = false;
             if (root.GetComponent<HurtFlash>() == null) { root.AddComponent<HurtFlash>(); changed = true; }
             if (root.GetComponent<BleedOnHit>() == null) { root.AddComponent<BleedOnHit>(); changed = true; }
+
+            // move the sprite onto a child so the walk bob doesn't move the collider
+            var rootSprite = root.GetComponent<SpriteRenderer>();
+            if (rootSprite != null)
+            {
+                var visual = new GameObject("Visual");
+                visual.transform.SetParent(root.transform, false);
+                var sr = visual.AddComponent<SpriteRenderer>();
+                sr.sortingOrder = rootSprite.sortingOrder;
+                Object.DestroyImmediate(rootSprite);
+                root.transform.localScale = Vector3.one;
+
+                var col = root.GetComponent<CircleCollider2D>();
+                if (col != null) { col.radius = 0.4f; col.offset = new Vector2(0f, -0.2f); }
+                changed = true;
+            }
+
+            // real character art if it's in the project
+            var sprites = LoadPlayerArt();
+            if (sprites != null)
+            {
+                var visualSr = root.GetComponentInChildren<SpriteRenderer>();
+                visualSr.sprite = sprites[0];
+                visualSr.color = Color.white;
+
+                var dirComp = root.GetComponent<PlayerSpriteDirection>();
+                if (dirComp == null) dirComp = root.AddComponent<PlayerSpriteDirection>();
+                SetRef(dirComp, "target", visualSr);
+                SetRef(dirComp, "front", sprites[0]);
+                SetRef(dirComp, "back", sprites[1]);
+                SetRef(dirComp, "left", sprites[2]);
+                SetRef(dirComp, "right", sprites[3]);
+                changed = true;
+            }
+
             if (changed) PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // front, back, left, right. returns null if the pngs aren't there
+        private static Sprite[] LoadPlayerArt()
+        {
+            string[] names = { "player_front", "player_back", "player_left", "player_right" };
+            var result = new Sprite[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                string path = PlayerArtDir + "/" + names[i] + ".png";
+                if (!File.Exists(path)) return null;
+                ImportAsPixelSprite(path, PlayerArtPixelsPerUnit);
+                result[i] = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (result[i] == null) return null;
+            }
+            return result;
+        }
+
+        internal static void ImportAsPixelSprite(string path, float pixelsPerUnit)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer == null) return;
+            }
+            bool dirty = importer.textureType != TextureImporterType.Sprite
+                || importer.spriteImportMode != SpriteImportMode.Single
+                || !Mathf.Approximately(importer.spritePixelsPerUnit, pixelsPerUnit)
+                || importer.filterMode != FilterMode.Point
+                || importer.mipmapEnabled
+                || importer.textureCompression != TextureImporterCompression.Uncompressed
+                || !importer.alphaIsTransparency
+                || importer.maxTextureSize < 2048;
+            if (!dirty) return;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = pixelsPerUnit;
+            importer.filterMode = FilterMode.Point;
+            importer.mipmapEnabled = false;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.alphaIsTransparency = true;
+            importer.maxTextureSize = 2048;
+            importer.SaveAndReimport();
         }
 
         private static GameObject MakeSpriteObject(string name, Transform parent, Vector2 position, Vector2 scale, Sprite sprite, Color color, int sortingOrder, bool solid)
