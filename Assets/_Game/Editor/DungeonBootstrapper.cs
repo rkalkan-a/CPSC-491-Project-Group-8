@@ -68,6 +68,7 @@ namespace DungeonCrawler.EditorTools
             cam.backgroundColor = new Color(0.04f, 0.03f, 0.05f);
             cam.transform.position = new Vector3(0f, 0f, -10f);
             cam.GetUniversalAdditionalCameraData(); // urp needs this
+            camGo.AddComponent<AudioListener>();
             camGo.AddComponent<RoomCamera>();
 
             // rooms
@@ -360,12 +361,13 @@ namespace DungeonCrawler.EditorTools
             textRect.sizeDelta = new Vector2(800f, 120f);
             var text = textGo.GetComponent<Text>();
             text.text = "you died";
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = DefaultFont();
             text.fontSize = 72;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = new Color(0.85f, 0.1f, 0.15f);
             text.raycastTarget = false;
             text.enabled = false;
+            textGo.AddComponent<ScaledText>();
 
             var hud = canvasGo.AddComponent<HealthHUD>();
             SetRef(hud, "heartsRoot", heartsRect);
@@ -379,6 +381,7 @@ namespace DungeonCrawler.EditorTools
             var root = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
             bool changed = false;
             if (root.GetComponent<HurtFlash>() == null) { root.AddComponent<HurtFlash>(); changed = true; }
+            if (root.GetComponent<BleedOnHit>() == null) { root.AddComponent<BleedOnHit>(); changed = true; }
             if (changed) PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             PrefabUtility.UnloadPrefabContents(root);
         }
@@ -470,6 +473,7 @@ namespace DungeonCrawler.EditorTools
             hso.ApplyModifiedPropertiesWithoutUndo();
 
             go.AddComponent<HurtFlash>();
+            go.AddComponent<BleedOnHit>();
 
             var controller = go.AddComponent<PlayerController>();
             var actions = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionsPath);
@@ -482,7 +486,7 @@ namespace DungeonCrawler.EditorTools
             return prefab;
         }
 
-        private static void SetRef(Object target, string field, Object value)
+        internal static void SetRef(Object target, string field, Object value)
         {
             var so = new SerializedObject(target);
             var prop = so.FindProperty(field);
@@ -495,13 +499,17 @@ namespace DungeonCrawler.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void AddSceneToBuildSettings(string path)
+        // menu goes first so it's what a build opens on, levels after
+        internal static void AddSceneToBuildSettings(string path, bool first = false)
         {
             var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
-            foreach (var s in scenes)
-                if (s.path == path) { s.enabled = true; EditorBuildSettings.scenes = scenes.ToArray(); return; }
-            scenes.Add(new EditorBuildSettingsScene(path, true));
+            scenes.RemoveAll(s => s.path == path);
+            var entry = new EditorBuildSettingsScene(path, true);
+            if (first) scenes.Insert(0, entry);
+            else scenes.Add(entry);
             EditorBuildSettings.scenes = scenes.ToArray();
         }
+
+        internal static Font DefaultFont() => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
     }
 }
