@@ -68,26 +68,26 @@ namespace DungeonCrawler.EditorTools
             // rooms
             var roomsRoot = new GameObject("Rooms");
             Vector2 room1Center = Vector2.zero;
-            Vector2 room2Center = new Vector2(RoomSize.x + RoomGap, 0f);
+            Vector2 room2Center = new Vector2(-(RoomSize.x + RoomGap), 0f); // progress goes right to left
 
             Room room1 = BuildRoom(roomsRoot.transform, "Room_01", room1Center, RoomSize, square,
-                new[] { DoorSide.East });
-            Room room2 = BuildRoom(roomsRoot.transform, "Room_02", room2Center, RoomSize, square,
                 new[] { DoorSide.West });
+            Room room2 = BuildRoom(roomsRoot.transform, "Room_02", room2Center, RoomSize, square,
+                new[] { DoorSide.East });
 
-            // link room 1 east <-> room 2 west
-            Door r1East = FindDoor(room1, DoorSide.East);
-            Door r2West = FindDoor(room2, DoorSide.West);
-            r1East.Link(r2West);
-            EditorUtility.SetDirty(r1East);
-            EditorUtility.SetDirty(r2West);
+            // link room 1 west <-> room 2 east
+            Door r1West = FindDoor(room1, DoorSide.West);
+            Door r2East = FindDoor(room2, DoorSide.East);
+            r1West.Link(r2East);
+            EditorUtility.SetDirty(r1West);
+            EditorUtility.SetDirty(r2East);
 
             // player start
-            PlayerSpawnPoint startSpawn = AddPlayerSpawn(room1, "Start", room1Center + new Vector2(-4f, 0f));
+            PlayerSpawnPoint startSpawn = AddPlayerSpawn(room1, "Start", room1Center + new Vector2(4f, 0f));
 
             // enemy spawn markers in room 2, no prefab yet
-            AddEnemySpawn(room2, room2Center + new Vector2(2f, 2f));
-            AddEnemySpawn(room2, room2Center + new Vector2(3.5f, -2f));
+            AddEnemySpawn(room2, room2Center + new Vector2(-2f, 2f));
+            AddEnemySpawn(room2, room2Center + new Vector2(-3.5f, -2f));
 
             // put a player in the scene so it's easy to see/edit, GameManager reuses it
             var playerInstance = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab, scene);
@@ -116,7 +116,7 @@ namespace DungeonCrawler.EditorTools
             }
 
             Selection.activeObject = room1.gameObject;
-            Debug.Log("Built Level_01. Hit play, WASD to move, red doorway switches rooms.");
+            Debug.Log("Built Level_01. Hit play, WASD to move, red doorway on the left switches rooms.");
         }
 
         [MenuItem("Tools/Dungeon/Add Room To Scene", priority = 1)]
@@ -128,13 +128,13 @@ namespace DungeonCrawler.EditorTools
             Transform parent = GameObject.Find("Rooms")?.transform;
             if (parent == null) parent = new GameObject("Rooms").transform;
 
-            // put it to the right of the furthest room
+            // put it to the left of the furthest room since the level runs right to left
             Vector2 center = Vector2.zero;
-            float maxRight = float.NegativeInfinity;
+            float minLeft = float.PositiveInfinity;
             foreach (var r in existing)
             {
-                float right = r.Center.x + r.Size.x * 0.5f;
-                if (right > maxRight) { maxRight = right; center = new Vector2(right + RoomGap + RoomSize.x * 0.5f, r.Center.y); }
+                float left = r.Center.x - r.Size.x * 0.5f;
+                if (left < minLeft) { minLeft = left; center = new Vector2(left - RoomGap - RoomSize.x * 0.5f, r.Center.y); }
             }
 
             string name = $"Room_{existing.Length + 1:00}";
