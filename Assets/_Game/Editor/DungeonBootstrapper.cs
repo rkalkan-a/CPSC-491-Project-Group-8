@@ -6,10 +6,12 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using DungeonCrawler.Combat;
 using DungeonCrawler.Core;
 using DungeonCrawler.Player;
 using DungeonCrawler.Rooms;
+using DungeonCrawler.UI;
 
 namespace DungeonCrawler.EditorTools
 {
@@ -33,6 +35,8 @@ namespace DungeonCrawler.EditorTools
         private static readonly Color WallColor = new Color(0.38f, 0.33f, 0.36f);
         private static readonly Color DoorColor = new Color(0.55f, 0.25f, 0.25f);
         private static readonly Color PlayerColor = new Color(0.85f, 0.92f, 0.95f);
+        private static readonly Color SpikeColor = new Color(0.62f, 0.62f, 0.68f);
+        private static readonly Color HeartColor = new Color(0.9f, 0.15f, 0.2f);
 
         [MenuItem("Tools/Dungeon/Build Starter Level", priority = 0)]
         public static void BuildStarterLevel()
@@ -50,6 +54,7 @@ namespace DungeonCrawler.EditorTools
 
             Sprite square = EnsureSquareSprite();
             GameObject playerPrefab = EnsurePlayerPrefab(square);
+            EnsurePlayerPrefabComponents();
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -89,6 +94,10 @@ namespace DungeonCrawler.EditorTools
             AddEnemySpawn(room2, room2Center + new Vector2(-2f, 2f));
             AddEnemySpawn(room2, room2Center + new Vector2(-3.5f, -2f));
 
+            // spikes to test taking damage, heart to test healing
+            MakeSpikes(room2.transform, room2Center + new Vector2(3f, 0f), new Vector2(1.5f, 3f), square);
+            MakeHeartPickup(room1.transform, room1Center + new Vector2(-2f, 2.5f), square);
+
             // put a player in the scene so it's easy to see/edit, GameManager reuses it
             var playerInstance = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab, scene);
             playerInstance.name = "Player";
@@ -101,6 +110,8 @@ namespace DungeonCrawler.EditorTools
             var gameManager = managers.AddComponent<GameManager>();
             SetRef(gameManager, "playerPrefab", playerPrefab.GetComponent<PlayerController>());
             SetRef(gameManager, "startSpawn", startSpawn);
+
+            BuildHud(square);
 
             // save and add to build settings
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
@@ -306,6 +317,72 @@ namespace DungeonCrawler.EditorTools
             return spawn;
         }
 
+        private static void MakeSpikes(Transform parent, Vector2 position, Vector2 size, Sprite square)
+        {
+            var go = MakeSpriteObject("Spikes", parent, position, size, square, SpikeColor, -3, false);
+            var col = go.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = Vector2.one;
+            go.AddComponent<DamageOnContact>();
+        }
+
+        private static void MakeHeartPickup(Transform parent, Vector2 position, Sprite square)
+        {
+            var go = MakeSpriteObject("HeartPickup", parent, position, new Vector2(0.5f, 0.5f), square, HeartColor, 1, false);
+            var col = go.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.6f;
+            go.AddComponent<HealthPickup>();
+        }
+
+        private static void BuildHud(Sprite square)
+        {
+            var canvasGo = new GameObject("HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var hearts = new GameObject("Hearts", typeof(RectTransform));
+            hearts.transform.SetParent(canvasGo.transform, false);
+            var heartsRect = (RectTransform)hearts.transform;
+            heartsRect.anchorMin = heartsRect.anchorMax = new Vector2(0f, 1f);
+            heartsRect.pivot = new Vector2(0f, 1f);
+            heartsRect.anchoredPosition = new Vector2(24f, -24f);
+            heartsRect.sizeDelta = new Vector2(400f, 40f);
+
+            var textGo = new GameObject("DeathText", typeof(RectTransform), typeof(Text));
+            textGo.transform.SetParent(canvasGo.transform, false);
+            var textRect = (RectTransform)textGo.transform;
+            textRect.anchorMin = textRect.anchorMax = new Vector2(0.5f, 0.5f);
+            textRect.sizeDelta = new Vector2(800f, 120f);
+            var text = textGo.GetComponent<Text>();
+            text.text = "you died";
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 72;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = new Color(0.85f, 0.1f, 0.15f);
+            text.raycastTarget = false;
+            text.enabled = false;
+
+            var hud = canvasGo.AddComponent<HealthHUD>();
+            SetRef(hud, "heartsRoot", heartsRect);
+            SetRef(hud, "heartSprite", square);
+            SetRef(hud, "deathText", text);
+        }
+
+        // adds any newer components to the player prefab so re-running the menu keeps it up to date
+        private static void EnsurePlayerPrefabComponents()
+        {
+            var root = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
+            bool changed = false;
+            if (root.GetComponent<HurtFlash>() == null) { root.AddComponent<HurtFlash>(); changed = true; }
+            if (changed) PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
         private static GameObject MakeSpriteObject(string name, Transform parent, Vector2 position, Vector2 scale, Sprite sprite, Color color, int sortingOrder, bool solid)
         {
             var go = new GameObject(name);
@@ -391,6 +468,8 @@ namespace DungeonCrawler.EditorTools
             hso.FindProperty("maxHealth").intValue = 6;
             hso.FindProperty("invulnerabilityTime").floatValue = 0.5f;
             hso.ApplyModifiedPropertiesWithoutUndo();
+
+            go.AddComponent<HurtFlash>();
 
             var controller = go.AddComponent<PlayerController>();
             var actions = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionsPath);

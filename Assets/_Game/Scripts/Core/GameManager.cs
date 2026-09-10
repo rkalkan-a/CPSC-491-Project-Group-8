@@ -115,7 +115,13 @@ namespace DungeonCrawler.Core
         {
             if (!RunActive) return;
             RunActive = false;
-            if (Player != null) Player.InputEnabled = false;
+            if (Player != null)
+            {
+                Player.InputEnabled = false;
+                Player.Body.linearVelocity = Vector2.zero;
+                var sprite = Player.GetComponentInChildren<SpriteRenderer>();
+                if (sprite != null) sprite.color = new Color(0.3f, 0.3f, 0.3f); // grey out so it reads as dead
+            }
 
             GameEvents.RaisePlayerDied();
             StartCoroutine(ResetRunAfterDelay());
