@@ -18,6 +18,8 @@ namespace DungeonCrawler.Player
         private Rigidbody2D rb;
         private InputActionMap playerMap;
         private InputAction moveAction;
+        private Vector2 knockbackVelocity;
+        private float knockbackTimer;
 
         private void Awake()
         {
@@ -71,11 +73,26 @@ namespace DungeonCrawler.Player
 
         private void FixedUpdate()
         {
+            // getting hit overrides normal movement for a moment
+            if (knockbackTimer > 0f)
+            {
+                knockbackTimer -= Time.fixedDeltaTime;
+                rb.linearVelocity = knockbackVelocity;
+                return;
+            }
+
             rb.linearVelocity = MoveInput * moveSpeed;
+        }
+
+        public void ApplyKnockback(Vector2 velocity, float duration)
+        {
+            knockbackVelocity = velocity;
+            knockbackTimer = duration;
         }
 
         public void TeleportTo(Vector2 worldPosition)
         {
+            knockbackTimer = 0f;
             rb.linearVelocity = Vector2.zero;
             rb.position = worldPosition;
             transform.position = worldPosition;
