@@ -16,8 +16,11 @@ namespace DungeonCrawler.Rooms
 
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
-        public bool IsLocked { get => isLocked; set => isLocked = value; }
+        public bool IsLocked => isLocked;
         public Room Room => GetComponentInParent<Room>();
+
+        private SpriteRenderer sprite;
+        private Color openColor;
 
         // points from the door into its own room
         public Vector2 InwardDirection => side switch
@@ -35,6 +38,19 @@ namespace DungeonCrawler.Rooms
         {
             var col = GetComponent<Collider2D>();
             if (col != null) col.isTrigger = true;
+        }
+
+        private void Awake()
+        {
+            sprite = GetComponent<SpriteRenderer>();
+            if (sprite != null) openColor = sprite.color;
+            SetLocked(isLocked);
+        }
+
+        public void SetLocked(bool locked)
+        {
+            isLocked = locked;
+            if (sprite != null) sprite.color = locked ? new Color(0.2f, 0.18f, 0.2f) : openColor;
         }
 
         private void OnTriggerEnter2D(Collider2D other)
