@@ -6,7 +6,7 @@ namespace DungeonCrawler.Rooms
     public enum DoorSide { North, South, East, West }
 
     // trigger on a wall that sends the player to the linked door in another room
-    [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(BoxCollider2D))]
     public class Door : MonoBehaviour
     {
         [SerializeField] private DoorSide side = DoorSide.North;
@@ -16,6 +16,7 @@ namespace DungeonCrawler.Rooms
 
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
+        public bool IsConnected => targetDoor != null;
         public bool IsLocked { get => isLocked; set => isLocked = value; }
         public Room Room => GetComponentInParent<Room>();
 
@@ -37,14 +38,18 @@ namespace DungeonCrawler.Rooms
             if (col != null) col.isTrigger = true;
         }
 
-        private void OnTriggerEnter2D(Collider2D other)
-        {
-            if (isLocked || targetDoor == null) return;
-            var player = other.GetComponentInParent<PlayerController>();
-            if (player == null) return;
+            private void OnTriggerEnter2D(Collider2D other)
+            {
+                if (isLocked || targetDoor == null) return;
+                var player = other.GetComponentInParent<PlayerController>();
+                if (player == null) return;
 
-            RoomManager.Instance?.TravelThrough(this, player);
-        }
+                Debug.Log(
+                    $"Travel: {Room?.RoomId} -> {targetDoor.Room?.RoomId}"
+                );
+
+                RoomManager.Instance?.TravelThrough(this, player);
+            }
 
         public void Link(Door other)
         {
