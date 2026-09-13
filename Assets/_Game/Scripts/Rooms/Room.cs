@@ -46,6 +46,30 @@ namespace DungeonCrawler.Rooms
             enemySpawns.AddRange(GetComponentsInChildren<EnemySpawnPoint>(true));
         }
 
+        public Door GetDoor(DoorSide side)
+        {
+            foreach(var door in doors)
+            {
+                if(door.Side == side)
+                    return door;
+            }
+            return null;
+        }
+
+        public List<Door> GetAvailableDoors()
+        {
+            var availableDoors = new List<Door>();
+
+            foreach(var door in doors)
+            {
+                if(!door.IsConnected)
+                    availableDoors.Add(door);
+            }
+
+            return availableDoors;
+
+        }
+
         public PlayerSpawnPoint GetPlayerSpawn(string id = null)
         {
             if (!string.IsNullOrEmpty(id))
