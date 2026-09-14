@@ -1,0 +1,5 @@
+Skeleton_Idle.png and Slime_Idle.png are cropped frames from the free
+"Cute Fantasy RPG" asset pack by Kenmi (kenmi-art.itch.io/cute-fantasy-rpg).
+
+License (free tier): non-commercial use only, may be modified,
+may not be redistributed/resold even if modified. Credit: Kenmi.
