@@ -12,13 +12,16 @@ namespace DungeonCrawler.EditorTools
     public static class EnemyBuilder
     {
         private const string PrefabDir = "Assets/_Game/Prefabs/Enemies";
-        private const string SquareSpritePath = "Assets/_Game/Art/Placeholders/Square.png";
+        private const string SkeletonSpritePath = "Assets/_Game/Art/Enemies/Skeleton_Idle.png";
+        private const string SlimeSpritePath = "Assets/_Game/Art/Enemies/Slime_Idle.png";
 
         [MenuItem("Tools/Dungeon/Setup Enemies In Scene", priority = 4)]
         public static void SetupEnemiesInScene()
         {
-            var ghoul = EnsureEnemyPrefab("Ghoul", new Color(0.38f, 0.55f, 0.32f), 0.9f, 3, Enemy.Behavior.Chaser, 3f);
-            var crawler = EnsureEnemyPrefab("Crawler", new Color(0.5f, 0.3f, 0.5f), 0.65f, 2, Enemy.Behavior.Wanderer, 1.2f);
+            // Ghoul = skeleton art (chaser), Crawler = slime art (wanderer) - real sprites from the
+            // free Cute Fantasy RPG pack (Kenmi, non-commercial license) instead of placeholder squares
+            var ghoul = EnsureEnemyPrefab("Ghoul", SkeletonSpritePath, Color.white, 0.8f, 3, Enemy.Behavior.Chaser, 3f);
+            var crawler = EnsureEnemyPrefab("Crawler", SlimeSpritePath, Color.white, 0.45f, 2, Enemy.Behavior.Wanderer, 1.2f);
 
             int assigned = 0;
             bool alternate = false;
@@ -47,14 +50,16 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Enemy prefabs ready, assigned " + assigned + " spawn point(s). Save the scene (Cmd+S) then press play.");
         }
 
-        private static GameObject EnsureEnemyPrefab(string name, Color color, float size, int hp, Enemy.Behavior behavior, float speed)
+        private static GameObject EnsureEnemyPrefab(string name, string spritePath, Color color, float size, int hp, Enemy.Behavior behavior, float speed)
         {
             string path = PrefabDir + "/" + name + ".prefab";
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 
             Directory.CreateDirectory(PrefabDir);
-            var square = AssetDatabase.LoadAssetAtPath<Sprite>(SquareSpritePath);
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            if (sprite == null)
+                Debug.LogWarning("No sprite found at " + spritePath + " - " + name + " will be invisible until art is imported.");
 
             var go = new GameObject(name);
 
@@ -62,7 +67,7 @@ namespace DungeonCrawler.EditorTools
             visual.transform.SetParent(go.transform, false);
             visual.transform.localScale = new Vector3(size, size, 1f);
             var sr = visual.AddComponent<SpriteRenderer>();
-            sr.sprite = square;
+            sr.sprite = sprite;
             sr.color = color;
             sr.sortingOrder = 9;
 

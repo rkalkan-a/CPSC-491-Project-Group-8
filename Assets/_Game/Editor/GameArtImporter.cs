@@ -32,6 +32,7 @@ namespace DungeonCrawler.EditorTools
             if (path.Contains("/Reference/")) return 1000f; // big concept images, not used in game
             if (path.Contains("/Chests/")) return 48f; // hand drawn at map scale, 44px = about 1 unit
             if (path.Contains("/Effects/")) return 48f;
+            if (path.Contains("/Enemies/")) return 16f; // small pixel-art creature sprites, 16px = 1 unit
             return 800f;
         }
     }
