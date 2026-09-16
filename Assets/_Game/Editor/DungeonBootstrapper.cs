@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using DungeonCrawler.Combat;
 using DungeonCrawler.Core;
+using DungeonCrawler.Loot;
 using DungeonCrawler.Player;
 using DungeonCrawler.Rooms;
 using DungeonCrawler.UI;
@@ -24,6 +25,11 @@ namespace DungeonCrawler.EditorTools
         private const string PlayerPrefabPath = "Assets/_Game/Prefabs/Player.prefab";
         private const string ScenePath = "Assets/_Game/Scenes/Level_01.unity";
         private const string InputActionsPath = "Assets/InputSystem_Actions.inputactions";
+        private const string PlayerArtDir = "Assets/_Game/Art/Player";
+        private const string ForestMapPath = "Assets/_Game/Art/Maps/forest_camp.png";
+        private const string ForestCollidersPath = "Assets/_Game/Art/Maps/forest_camp_colliders.json";
+        private const float ForestPixelsPerUnit = 48f; // 1536px map -> 32 units wide
+        private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
         // room layout in world units, camera fits the room on its own
         private static readonly Vector2 RoomSize = new Vector2(17f, 10f);
@@ -76,8 +82,9 @@ namespace DungeonCrawler.EditorTools
             Vector2 room1Center = Vector2.zero;
             Vector2 room2Center = new Vector2(-(RoomSize.x + RoomGap), 0f); // progress goes right to left
 
+            bool hasForest = File.Exists(ForestMapPath);
             Room room1 = BuildRoom(roomsRoot.transform, "Room_01", room1Center, RoomSize, square,
-                new[] { DoorSide.West });
+                hasForest ? new[] { DoorSide.West, DoorSide.East } : new[] { DoorSide.West });
             Room room2 = BuildRoom(roomsRoot.transform, "Room_02", room2Center, RoomSize, square,
                 new[] { DoorSide.East });
 
@@ -88,8 +95,30 @@ namespace DungeonCrawler.EditorTools
             EditorUtility.SetDirty(r1West);
             EditorUtility.SetDirty(r2East);
 
-            // player start
-            PlayerSpawnPoint startSpawn = AddPlayerSpawn(room1, "Start", room1Center + new Vector2(4f, 0f));
+            // forest camp area with the dungeon gate, sits to the right of room 1 since that's where the run starts
+            Room forest = hasForest ? BuildForestArea(roomsRoot.transform, room1Center.x + RoomSize.x * 0.5f + RoomGap) : null;
+            if (forest != null)
+            {
+                Door gate = FindDoor(forest, DoorSide.North);
+                Door r1East = FindDoor(room1, DoorSide.East);
+                gate.Link(r1East);
+                EditorUtility.SetDirty(gate);
+                EditorUtility.SetDirty(r1East);
+            }
+
+            // player start. by the campfire if the forest exists, otherwise in room 1
+            PlayerSpawnPoint startSpawn;
+            if (forest != null)
+            {
+                startSpawn = AddPlayerSpawn(forest, "Start", ForestPixelToWorld(forest, 1250f, 500f));
+                MakeChest(forest.transform, ForestPixelToWorld(forest, 1195f, 452f), square);
+                AddPlayerSpawn(room1, "DungeonEntrance", room1Center + new Vector2(4f, 0f));
+                cam.transform.position = new Vector3(startSpawn.Position.x, startSpawn.Position.y, -10f);
+            }
+            else
+            {
+                startSpawn = AddPlayerSpawn(room1, "Start", room1Center + new Vector2(4f, 0f));
+            }
 
             // enemy spawn markers in room 2, no prefab yet
             AddEnemySpawn(room2, room2Center + new Vector2(-2f, 2f));
@@ -107,7 +136,7 @@ namespace DungeonCrawler.EditorTools
             // managers
             var managers = new GameObject("GameManager");
             var roomManager = managers.AddComponent<RoomManager>();
-            SetRef(roomManager, "startingRoom", room1);
+            SetRef(roomManager, "startingRoom", forest != null ? forest : room1);
             var gameManager = managers.AddComponent<GameManager>();
             SetRef(gameManager, "playerPrefab", playerPrefab.GetComponent<PlayerController>());
             SetRef(gameManager, "startSpawn", startSpawn);
@@ -129,6 +158,17 @@ namespace DungeonCrawler.EditorTools
 
             Selection.activeObject = room1.gameObject;
             Debug.Log("Built Level_01. Hit play, WASD to move, red doorway on the left switches rooms.");
+        }
+
+        // refreshes the player prefab (art, components) without rebuilding the whole level
+        [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
+        public static void UpdatePlayerPrefab()
+        {
+            Sprite square = EnsureSquareSprite();
+            EnsurePlayerPrefab(square);
+            EnsurePlayerPrefabComponents();
+            AssetDatabase.SaveAssets();
+            Debug.Log("Player prefab updated");
         }
 
         [MenuItem("Tools/Dungeon/Add Room To Scene", priority = 1)]
@@ -229,6 +269,115 @@ namespace DungeonCrawler.EditorTools
             return room;
         }
 
+        // colliders json is a list of polygon outlines in image pixels. outer shapes block, shapes inside them are holes (the walkable bits)
+        // the painted forest map as one big room. colliders come from the json next to the png
+        private static Room BuildForestArea(Transform parent, float leftEdgeX)
+        {
+            ImportAsPixelSprite(ForestMapPath, ForestPixelsPerUnit);
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ForestMapPath);
+            if (sprite == null) return null;
+
+            float w = sprite.texture.width / ForestPixelsPerUnit;
+            float h = sprite.texture.height / ForestPixelsPerUnit;
+            Vector2 center = new Vector2(leftEdgeX + w * 0.5f, 0f);
+
+            var go = new GameObject("Forest_Camp");
+            go.transform.SetParent(parent, false);
+            go.transform.position = center;
+            var room = go.AddComponent<Room>();
+            var so = new SerializedObject(room);
+            so.FindProperty("roomId").stringValue = "Forest_Camp";
+            so.FindProperty("size").vector2Value = new Vector2(w, h);
+            so.FindProperty("clearedOnEnter").boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var mapGo = new GameObject("Map");
+            mapGo.transform.SetParent(go.transform, false);
+            var sr = mapGo.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = -10;
+
+            if (File.Exists(ForestCollidersPath))
+            {
+                var paths = ReadColliderPaths(File.ReadAllText(ForestCollidersPath));
+                var colGo = new GameObject("Colliders");
+                colGo.transform.SetParent(go.transform, false);
+                colGo.transform.localPosition = Vector3.zero;
+                var poly = colGo.AddComponent<PolygonCollider2D>();
+                poly.pathCount = paths.Count;
+                for (int i = 0; i < paths.Count; i++)
+                {
+                    var pts = new Vector2[paths[i].Count];
+                    for (int j = 0; j < pts.Length; j++)
+                        pts[j] = ForestPixelToWorld(room, paths[i][j].x, paths[i][j].y) - room.Center; // local to the room
+                    poly.SetPath(i, pts);
+                }
+            }
+
+            // dungeon gate at the top left is the way into the first level
+            var gateGo = new GameObject("Door_Gate");
+            gateGo.transform.SetParent(go.transform, false);
+            gateGo.transform.position = ForestPixelToWorld(room, 320f, 340f);
+            var gateCol = gateGo.AddComponent<BoxCollider2D>();
+            gateCol.isTrigger = true;
+            gateCol.size = new Vector2(2.6f, 0.8f);
+            var gate = gateGo.AddComponent<Door>();
+            var dso = new SerializedObject(gate);
+            dso.FindProperty("side").enumValueIndex = (int)DoorSide.North;
+            dso.FindProperty("arrivalDistance").floatValue = 1.2f;
+            dso.ApplyModifiedPropertiesWithoutUndo();
+
+            room.RefreshChildren();
+            return room;
+        }
+
+        // JsonUtility can't do nested arrays so this just parses the "paths" bit by hand
+        private static List<List<Vector2>> ReadColliderPaths(string json)
+        {
+            var result = new List<List<Vector2>>();
+            int start = json.IndexOf("\"paths\"");
+            if (start < 0) return result;
+            int i = json.IndexOf('[', start) + 1; // inside the outer list
+            int depth = 1;
+            List<Vector2> current = null;
+            string num = "";
+            float? pendingX = null;
+            for (; i < json.Length && depth > 0; i++)
+            {
+                char c = json[i];
+                if (c == '[')
+                {
+                    depth++;
+                    if (depth == 2) current = new List<Vector2>();
+                }
+                else if (c == ']' || c == ',')
+                {
+                    if (num.Length > 0)
+                    {
+                        float v = float.Parse(num, System.Globalization.CultureInfo.InvariantCulture);
+                        if (pendingX == null) pendingX = v;
+                        else { current.Add(new Vector2(pendingX.Value, v)); pendingX = null; }
+                        num = "";
+                    }
+                    if (c == ']')
+                    {
+                        depth--;
+                        if (depth == 1 && current != null) { result.Add(current); current = null; }
+                    }
+                }
+                else if (char.IsDigit(c) || c == '.' || c == '-') num += c;
+            }
+            return result;
+        }
+
+        // image pixel coords (top left origin) -> world position inside the forest room
+        private static Vector2 ForestPixelToWorld(Room forest, float px, float py)
+        {
+            float w = forest.Size.x * ForestPixelsPerUnit;
+            float h = forest.Size.y * ForestPixelsPerUnit;
+            return forest.Center + new Vector2((px - w * 0.5f) / ForestPixelsPerUnit, -(py - h * 0.5f) / ForestPixelsPerUnit);
+        }
+
         // one wall, split in two with a gap if there's a door
         private static void BuildWallSide(Transform parent, Vector2 center, Vector2 size, DoorSide side, bool hasDoor, Sprite square)
         {
@@ -318,6 +467,106 @@ namespace DungeonCrawler.EditorTools
             return spawn;
         }
 
+        private static void MakeChest(Transform parent, Vector2 position, Sprite square)
+        {
+            const string closedPath = "Assets/_Game/Art/Chests/chest_closed.png";
+            const string openPath = "Assets/_Game/Art/Chests/chest_open.png";
+            if (!File.Exists(closedPath)) { Debug.LogWarning("no chest art at " + closedPath); return; }
+            ImportAsPixelSprite(closedPath, 48f);
+            ImportAsPixelSprite(openPath, 48f);
+            var closed = AssetDatabase.LoadAssetAtPath<Sprite>(closedPath);
+            var open = AssetDatabase.LoadAssetAtPath<Sprite>(openPath);
+            if (closed == null) { Debug.LogWarning("chest sprite didn't import, click into unity and run the build again"); return; }
+
+            var go = new GameObject("Chest");
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(go.transform, false);
+            visual.transform.localPosition = new Vector3(0f, 0.15f, 0f); // sprite sits a bit above the hitbox so it reads as standing on the floor
+            var sr = visual.AddComponent<SpriteRenderer>();
+            sr.sprite = closed;
+            sr.sortingOrder = 5;
+
+            var col = go.AddComponent<BoxCollider2D>();
+            col.size = new Vector2(0.85f, 0.4f);
+
+            var chest = go.AddComponent<Chest>();
+            SetRef(chest, "sprite", sr);
+            SetRef(chest, "closedSprite", closed);
+            SetRef(chest, "openSprite", open);
+
+            // glow under it until it's opened
+            const string glowPath = "Assets/_Game/Art/Effects/glow.png";
+            ImportAsPixelSprite(glowPath, 48f);
+            var glowSprite = AssetDatabase.LoadAssetAtPath<Sprite>(glowPath);
+            var glowGo = new GameObject("Glow");
+            glowGo.transform.SetParent(go.transform, false);
+            glowGo.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            glowGo.transform.localScale = new Vector3(1.7f, 1.3f, 1f);
+            var glowSr = glowGo.AddComponent<SpriteRenderer>();
+            glowSr.sprite = glowSprite;
+            glowSr.color = new Color(1f, 0.85f, 0.5f, 0.4f);
+            glowSr.sortingOrder = 4;
+
+            var fx = go.AddComponent<ChestGlow>();
+            SetRef(fx, "glow", glowSr);
+            SetRef(fx, "sparkleSprite", square);
+        }
+
+        private static void BuildChestPanel(Transform canvas)
+        {
+            var root = new GameObject("ChestPanel", typeof(RectTransform), typeof(Image));
+            root.transform.SetParent(canvas, false);
+            var rect = (RectTransform)root.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(640f, 380f);
+            root.GetComponent<Image>().color = new Color(0.06f, 0.05f, 0.07f, 0.95f);
+
+            var title = new GameObject("Title", typeof(RectTransform), typeof(Text), typeof(ScaledText));
+            title.transform.SetParent(root.transform, false);
+            var titleRect = (RectTransform)title.transform;
+            titleRect.anchorMin = titleRect.anchorMax = new Vector2(0.5f, 1f);
+            titleRect.anchoredPosition = new Vector2(0f, -40f);
+            titleRect.sizeDelta = new Vector2(600f, 60f);
+            var titleText = title.GetComponent<Text>();
+            titleText.text = "Chest";
+            titleText.font = DefaultFont();
+            titleText.fontSize = 44;
+            titleText.alignment = TextAnchor.MiddleCenter;
+            titleText.color = new Color(0.9f, 0.86f, 0.86f);
+
+            // 6 empty slots
+            for (int i = 0; i < 6; i++)
+            {
+                var slot = new GameObject("Slot" + i, typeof(RectTransform), typeof(Image));
+                slot.transform.SetParent(root.transform, false);
+                var slotRect = (RectTransform)slot.transform;
+                slotRect.anchorMin = slotRect.anchorMax = new Vector2(0.5f, 0.5f);
+                slotRect.sizeDelta = new Vector2(90f, 90f);
+                slotRect.anchoredPosition = new Vector2(-250f + i * 100f, 10f);
+                slot.GetComponent<Image>().color = new Color(0.16f, 0.13f, 0.15f);
+            }
+
+            var hint = new GameObject("Hint", typeof(RectTransform), typeof(Text), typeof(ScaledText));
+            hint.transform.SetParent(root.transform, false);
+            var hintRect = (RectTransform)hint.transform;
+            hintRect.anchorMin = hintRect.anchorMax = new Vector2(0.5f, 0f);
+            hintRect.anchoredPosition = new Vector2(0f, 45f);
+            hintRect.sizeDelta = new Vector2(600f, 50f);
+            var hintText = hint.GetComponent<Text>();
+            hintText.text = "nothing inside yet. press esc to close";
+            hintText.font = DefaultFont();
+            hintText.fontSize = 26;
+            hintText.alignment = TextAnchor.MiddleCenter;
+            hintText.color = new Color(0.7f, 0.65f, 0.65f);
+
+            var panel = canvas.gameObject.AddComponent<ChestPanel>();
+            SetRef(panel, "panelRoot", root);
+            root.SetActive(false);
+        }
+
         private static void MakeSpikes(Transform parent, Vector2 position, Vector2 size, Sprite square)
         {
             var go = MakeSpriteObject("Spikes", parent, position, size, square, SpikeColor, -3, false);
@@ -373,6 +622,8 @@ namespace DungeonCrawler.EditorTools
             SetRef(hud, "heartsRoot", heartsRect);
             SetRef(hud, "heartSprite", square);
             SetRef(hud, "deathText", text);
+
+            BuildChestPanel(canvasGo.transform);
         }
 
         // adds any newer components to the player prefab so re-running the menu keeps it up to date
@@ -382,8 +633,106 @@ namespace DungeonCrawler.EditorTools
             bool changed = false;
             if (root.GetComponent<HurtFlash>() == null) { root.AddComponent<HurtFlash>(); changed = true; }
             if (root.GetComponent<BleedOnHit>() == null) { root.AddComponent<BleedOnHit>(); changed = true; }
+
+            // move the sprite onto a child so the walk bob doesn't move the collider
+            var rootSprite = root.GetComponent<SpriteRenderer>();
+            if (rootSprite != null)
+            {
+                var visual = new GameObject("Visual");
+                visual.transform.SetParent(root.transform, false);
+                var sr = visual.AddComponent<SpriteRenderer>();
+                sr.sortingOrder = rootSprite.sortingOrder;
+                Object.DestroyImmediate(rootSprite);
+                root.transform.localScale = Vector3.one;
+
+                var col = root.GetComponent<CircleCollider2D>();
+                if (col != null) { col.radius = 0.4f; col.offset = new Vector2(0f, -0.2f); }
+                changed = true;
+            }
+
+            // slippery material so you slide along walls instead of sticking on corners
+            var playerCol = root.GetComponent<Collider2D>();
+            if (playerCol != null && playerCol.sharedMaterial == null)
+            {
+                playerCol.sharedMaterial = EnsureNoFrictionMaterial();
+                changed = true;
+            }
+
+            // real character art if it's in the project
+            var sprites = LoadPlayerArt();
+            if (sprites != null)
+            {
+                var visualSr = root.GetComponentInChildren<SpriteRenderer>();
+                visualSr.sprite = sprites[0];
+                visualSr.color = Color.white;
+
+                var dirComp = root.GetComponent<PlayerSpriteDirection>();
+                if (dirComp == null) dirComp = root.AddComponent<PlayerSpriteDirection>();
+                SetRef(dirComp, "target", visualSr);
+                SetRef(dirComp, "front", sprites[0]);
+                SetRef(dirComp, "back", sprites[1]);
+                SetRef(dirComp, "left", sprites[2]);
+                SetRef(dirComp, "right", sprites[3]);
+                changed = true;
+            }
+
             if (changed) PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             PrefabUtility.UnloadPrefabContents(root);
+        }
+
+        // front, back, left, right. returns null if the pngs aren't there
+        private static Sprite[] LoadPlayerArt()
+        {
+            string[] names = { "player_front", "player_back", "player_left", "player_right" };
+            var result = new Sprite[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                string path = PlayerArtDir + "/" + names[i] + ".png";
+                if (!File.Exists(path)) return null;
+                ImportAsPixelSprite(path, PlayerArtPixelsPerUnit);
+                result[i] = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (result[i] == null) return null;
+            }
+            return result;
+        }
+
+        private static PhysicsMaterial2D EnsureNoFrictionMaterial()
+        {
+            const string path = "Assets/_Game/Prefabs/NoFriction.physicsMaterial2D";
+            var mat = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(path);
+            if (mat != null) return mat;
+            mat = new PhysicsMaterial2D("NoFriction") { friction = 0f, bounciness = 0f };
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
+        internal static void ImportAsPixelSprite(string path, float pixelsPerUnit)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer == null) return;
+            }
+            bool dirty = importer.textureType != TextureImporterType.Sprite
+                || importer.spriteImportMode != SpriteImportMode.Single
+                || !Mathf.Approximately(importer.spritePixelsPerUnit, pixelsPerUnit)
+                || importer.filterMode != FilterMode.Point
+                || importer.mipmapEnabled
+                || importer.textureCompression != TextureImporterCompression.Uncompressed
+                || !importer.alphaIsTransparency
+                || importer.maxTextureSize < 2048;
+            if (!dirty) return;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = pixelsPerUnit;
+            importer.filterMode = FilterMode.Point;
+            importer.mipmapEnabled = false;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.alphaIsTransparency = true;
+            importer.maxTextureSize = 2048;
+            importer.SaveAndReimport();
         }
 
         private static GameObject MakeSpriteObject(string name, Transform parent, Vector2 position, Vector2 scale, Sprite sprite, Color color, int sortingOrder, bool solid)
