@@ -18,7 +18,6 @@ namespace DungeonCrawler.Rooms
         public Door TargetDoor => targetDoor;
         public bool IsConnected => targetDoor != null;
         public bool IsLocked { get => isLocked; set => isLocked = value; }
-        public bool IsLocked => isLocked;
         public Room Room => GetComponentInParent<Room>();
 
         private SpriteRenderer sprite;
@@ -42,11 +41,6 @@ namespace DungeonCrawler.Rooms
             if (col != null) col.isTrigger = true;
         }
 
-            private void OnTriggerEnter2D(Collider2D other)
-            {
-                if (isLocked || targetDoor == null) return;
-                var player = other.GetComponentInParent<PlayerController>();
-                if (player == null) return;
         private void Awake()
         {
             sprite = GetComponent<SpriteRenderer>();
@@ -66,12 +60,9 @@ namespace DungeonCrawler.Rooms
             var player = other.GetComponentInParent<PlayerController>();
             if (player == null) return;
 
-                Debug.Log(
-                    $"Travel: {Room?.RoomId} -> {targetDoor.Room?.RoomId}"
-                );
-
-                RoomManager.Instance?.TravelThrough(this, player);
-            }
+            Debug.Log($"Travel: {Room?.RoomId} -> {targetDoor.Room?.RoomId}");
+            RoomManager.Instance?.TravelThrough(this, player);
+        }
 
         public void Link(Door other)
         {
