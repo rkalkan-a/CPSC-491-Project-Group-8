@@ -10,7 +10,7 @@ namespace DungeonCrawler.Rooms
     {
         [SerializeField, Min(0f)] private float smoothTime = 0.12f; // 0 = snap
         [SerializeField, Min(0f)] private float padding = 0f;
-        [SerializeField, Min(1f)] private float maxLockedViewHeight = 12f; // rooms taller than this switch to follow mode
+        [SerializeField, Min(1f)] private float maxLockedViewHeight = 17f; // rooms taller than this switch to follow mode (dungeon rooms are 16, the forest is 21)
         [SerializeField, Min(1f)] private float followViewHeight = 11f;
 
         private Camera cam;
