@@ -29,6 +29,9 @@ namespace DungeonCrawler.EditorTools
         private const string ForestMapPath = "Assets/_Game/Art/Maps/forest_camp.png";
         private const string ForestCollidersPath = "Assets/_Game/Art/Maps/forest_camp_colliders.json";
         private const float ForestPixelsPerUnit = 48f; // 1536px map -> 32 units wide
+        private const string DungeonMapPath = "Assets/_Game/Art/Maps/dungeon_room_01.png";
+        private const string DungeonCollidersPath = "Assets/_Game/Art/Maps/dungeon_room_01_colliders.json";
+        private const float DungeonPixelsPerUnit = 64f; // 1536px room -> 24 units wide, fits on screen in one go
         private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
         // room layout in world units, camera fits the room on its own
@@ -77,42 +80,68 @@ namespace DungeonCrawler.EditorTools
             camGo.AddComponent<AudioListener>();
             camGo.AddComponent<RoomCamera>();
 
-            // rooms
+            // rooms, laid out right to left: forest camp -> dungeon room 1 -> room 2
             var roomsRoot = new GameObject("Rooms");
-            Vector2 room1Center = Vector2.zero;
-            Vector2 room2Center = new Vector2(-(RoomSize.x + RoomGap), 0f); // progress goes right to left
-
             bool hasForest = File.Exists(ForestMapPath);
-            Room room1 = BuildRoom(roomsRoot.transform, "Room_01", room1Center, RoomSize, square,
-                hasForest ? new[] { DoorSide.West, DoorSide.East } : new[] { DoorSide.West });
-            Room room2 = BuildRoom(roomsRoot.transform, "Room_02", room2Center, RoomSize, square,
-                new[] { DoorSide.East });
+            bool hasDungeonMap = File.Exists(DungeonMapPath);
 
-            // link room 1 west <-> room 2 east
-            Door r1West = FindDoor(room1, DoorSide.West);
+            // room 1 is the painted dungeon room if the art is there, otherwise the grey placeholder
+            Room room1;
+            Vector2 room1Center = Vector2.zero;
+            float room1HalfW;
+            if (hasDungeonMap)
+            {
+                room1 = BuildMapRoom(roomsRoot.transform, "Dungeon_01", DungeonMapPath, DungeonCollidersPath, DungeonPixelsPerUnit, room1Center, false);
+                room1HalfW = room1.Size.x * 0.5f;
+                AddMapDoor(room1, DoorSide.North, DungeonPixelsPerUnit, 768f, 200f, new Vector2(1.6f, 0.8f));  // arch at the top, leads deeper
+                AddMapDoor(room1, DoorSide.South, DungeonPixelsPerUnit, 1232f, 935f, new Vector2(1.4f, 0.8f)); // bottom right doorway, back to the forest
+                AddEnemySpawn(room1, MapPixelToWorld(room1, DungeonPixelsPerUnit, 500f, 480f));
+                AddEnemySpawn(room1, MapPixelToWorld(room1, DungeonPixelsPerUnit, 900f, 560f));
+                AddEnemySpawn(room1, MapPixelToWorld(room1, DungeonPixelsPerUnit, 300f, 350f));
+            }
+            else
+            {
+                room1 = BuildRoom(roomsRoot.transform, "Room_01", room1Center, RoomSize, square,
+                    hasForest ? new[] { DoorSide.West, DoorSide.East } : new[] { DoorSide.West });
+                room1HalfW = RoomSize.x * 0.5f;
+                MakeHeartPickup(room1.transform, room1Center + new Vector2(-2f, 2.5f), square);
+            }
+
+            Vector2 room2Center = new Vector2(-(room1HalfW + RoomGap + RoomSize.x * 0.5f), 0f);
+            Room room2 = BuildRoom(roomsRoot.transform, "Room_02", room2Center, RoomSize, square, new[] { DoorSide.East });
+
+            // room 1 exit <-> room 2 east door
+            Door r1Exit = FindDoor(room1, hasDungeonMap ? DoorSide.North : DoorSide.West);
             Door r2East = FindDoor(room2, DoorSide.East);
-            r1West.Link(r2East);
-            EditorUtility.SetDirty(r1West);
+            r1Exit.Link(r2East);
+            EditorUtility.SetDirty(r1Exit);
             EditorUtility.SetDirty(r2East);
 
-            // forest camp area with the dungeon gate, sits to the right of room 1 since that's where the run starts
-            Room forest = hasForest ? BuildForestArea(roomsRoot.transform, room1Center.x + RoomSize.x * 0.5f + RoomGap) : null;
-            if (forest != null)
+            // forest camp with the dungeon gate, to the right of room 1 since that's where the run starts
+            Room forest = null;
+            if (hasForest)
             {
-                Door gate = FindDoor(forest, DoorSide.North);
-                Door r1East = FindDoor(room1, DoorSide.East);
-                gate.Link(r1East);
-                EditorUtility.SetDirty(gate);
-                EditorUtility.SetDirty(r1East);
+                float forestW = 0f;
+                var forestSprite = LoadMapSprite(ForestMapPath, ForestPixelsPerUnit);
+                if (forestSprite != null) forestW = forestSprite.texture.width / ForestPixelsPerUnit;
+                Vector2 forestCenter = new Vector2(room1Center.x + room1HalfW + RoomGap + forestW * 0.5f, 0f);
+                forest = BuildMapRoom(roomsRoot.transform, "Forest_Camp", ForestMapPath, ForestCollidersPath, ForestPixelsPerUnit, forestCenter, true);
+                if (forest != null)
+                {
+                    Door gate = AddMapDoor(forest, DoorSide.North, ForestPixelsPerUnit, 320f, 340f, new Vector2(2.6f, 0.8f), 1.2f); // dungeon gate steps
+                    Door r1Entrance = FindDoor(room1, hasDungeonMap ? DoorSide.South : DoorSide.East);
+                    gate.Link(r1Entrance);
+                    EditorUtility.SetDirty(gate);
+                    EditorUtility.SetDirty(r1Entrance);
+                }
             }
 
             // player start. by the campfire if the forest exists, otherwise in room 1
             PlayerSpawnPoint startSpawn;
             if (forest != null)
             {
-                startSpawn = AddPlayerSpawn(forest, "Start", ForestPixelToWorld(forest, 1250f, 500f));
-                MakeChest(forest.transform, ForestPixelToWorld(forest, 1195f, 452f), square);
-                AddPlayerSpawn(room1, "DungeonEntrance", room1Center + new Vector2(4f, 0f));
+                startSpawn = AddPlayerSpawn(forest, "Start", MapPixelToWorld(forest, ForestPixelsPerUnit, 1250f, 500f));
+                MakeChest(forest.transform, MapPixelToWorld(forest, ForestPixelsPerUnit, 1195f, 452f), square);
                 cam.transform.position = new Vector3(startSpawn.Position.x, startSpawn.Position.y, -10f);
             }
             else
@@ -124,9 +153,8 @@ namespace DungeonCrawler.EditorTools
             AddEnemySpawn(room2, room2Center + new Vector2(-2f, 2f));
             AddEnemySpawn(room2, room2Center + new Vector2(-3.5f, -2f));
 
-            // spikes to test taking damage, heart to test healing
+            // spikes to test taking damage
             MakeSpikes(room2.transform, room2Center + new Vector2(3f, 0f), new Vector2(1.5f, 3f), square);
-            MakeHeartPickup(room1.transform, room1Center + new Vector2(-2f, 2.5f), square);
 
             // put a player in the scene so it's easy to see/edit, GameManager reuses it
             var playerInstance = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab, scene);
@@ -270,25 +298,29 @@ namespace DungeonCrawler.EditorTools
         }
 
         // colliders json is a list of polygon outlines in image pixels. outer shapes block, shapes inside them are holes (the walkable bits)
-        // the painted forest map as one big room. colliders come from the json next to the png
-        private static Room BuildForestArea(Transform parent, float leftEdgeX)
+        private static Sprite LoadMapSprite(string path, float ppu)
         {
-            ImportAsPixelSprite(ForestMapPath, ForestPixelsPerUnit);
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(ForestMapPath);
+            ImportAsPixelSprite(path, ppu);
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        // a painted map image as one big room
+        private static Room BuildMapRoom(Transform parent, string name, string pngPath, string jsonPath, float ppu, Vector2 center, bool clearedOnEnter)
+        {
+            var sprite = LoadMapSprite(pngPath, ppu);
             if (sprite == null) return null;
 
-            float w = sprite.texture.width / ForestPixelsPerUnit;
-            float h = sprite.texture.height / ForestPixelsPerUnit;
-            Vector2 center = new Vector2(leftEdgeX + w * 0.5f, 0f);
+            float w = sprite.texture.width / ppu;
+            float h = sprite.texture.height / ppu;
 
-            var go = new GameObject("Forest_Camp");
+            var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.position = center;
             var room = go.AddComponent<Room>();
             var so = new SerializedObject(room);
-            so.FindProperty("roomId").stringValue = "Forest_Camp";
+            so.FindProperty("roomId").stringValue = name;
             so.FindProperty("size").vector2Value = new Vector2(w, h);
-            so.FindProperty("clearedOnEnter").boolValue = true;
+            so.FindProperty("clearedOnEnter").boolValue = clearedOnEnter;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var mapGo = new GameObject("Map");
@@ -297,9 +329,9 @@ namespace DungeonCrawler.EditorTools
             sr.sprite = sprite;
             sr.sortingOrder = -10;
 
-            if (File.Exists(ForestCollidersPath))
+            if (File.Exists(jsonPath))
             {
-                var paths = ReadColliderPaths(File.ReadAllText(ForestCollidersPath));
+                var paths = ReadColliderPaths(File.ReadAllText(jsonPath));
                 var colGo = new GameObject("Colliders");
                 colGo.transform.SetParent(go.transform, false);
                 colGo.transform.localPosition = Vector3.zero;
@@ -309,26 +341,31 @@ namespace DungeonCrawler.EditorTools
                 {
                     var pts = new Vector2[paths[i].Count];
                     for (int j = 0; j < pts.Length; j++)
-                        pts[j] = ForestPixelToWorld(room, paths[i][j].x, paths[i][j].y) - room.Center; // local to the room
+                        pts[j] = MapPixelToWorld(room, ppu, paths[i][j].x, paths[i][j].y) - room.Center; // local to the room
                     poly.SetPath(i, pts);
                 }
             }
 
-            // dungeon gate at the top left is the way into the first level
-            var gateGo = new GameObject("Door_Gate");
-            gateGo.transform.SetParent(go.transform, false);
-            gateGo.transform.position = ForestPixelToWorld(room, 320f, 340f);
-            var gateCol = gateGo.AddComponent<BoxCollider2D>();
-            gateCol.isTrigger = true;
-            gateCol.size = new Vector2(2.6f, 0.8f);
-            var gate = gateGo.AddComponent<Door>();
-            var dso = new SerializedObject(gate);
-            dso.FindProperty("side").enumValueIndex = (int)DoorSide.North;
-            dso.FindProperty("arrivalDistance").floatValue = 1.2f;
-            dso.ApplyModifiedPropertiesWithoutUndo();
-
             room.RefreshChildren();
             return room;
+        }
+
+        // invisible door trigger at a pixel spot on a map room. size is in world units
+        private static Door AddMapDoor(Room room, DoorSide side, float ppu, float px, float py, Vector2 size, float arrivalDistance = 1.5f)
+        {
+            var go = new GameObject("Door_" + side);
+            go.transform.SetParent(room.transform, false);
+            go.transform.position = MapPixelToWorld(room, ppu, px, py);
+            var col = go.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = size;
+            var door = go.AddComponent<Door>();
+            var so = new SerializedObject(door);
+            so.FindProperty("side").enumValueIndex = (int)side;
+            so.FindProperty("arrivalDistance").floatValue = arrivalDistance;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            room.RefreshChildren();
+            return door;
         }
 
         // JsonUtility can't do nested arrays so this just parses the "paths" bit by hand
@@ -370,12 +407,12 @@ namespace DungeonCrawler.EditorTools
             return result;
         }
 
-        // image pixel coords (top left origin) -> world position inside the forest room
-        private static Vector2 ForestPixelToWorld(Room forest, float px, float py)
+        // image pixel coords (top left origin) -> world position inside a map room
+        private static Vector2 MapPixelToWorld(Room room, float ppu, float px, float py)
         {
-            float w = forest.Size.x * ForestPixelsPerUnit;
-            float h = forest.Size.y * ForestPixelsPerUnit;
-            return forest.Center + new Vector2((px - w * 0.5f) / ForestPixelsPerUnit, -(py - h * 0.5f) / ForestPixelsPerUnit);
+            float w = room.Size.x * ppu;
+            float h = room.Size.y * ppu;
+            return room.Center + new Vector2((px - w * 0.5f) / ppu, -(py - h * 0.5f) / ppu);
         }
 
         // one wall, split in two with a gap if there's a door
