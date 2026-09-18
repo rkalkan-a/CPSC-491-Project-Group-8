@@ -33,6 +33,7 @@ namespace DungeonCrawler.EditorTools
             if (path.Contains("/Chests/")) return 48f; // hand drawn at map scale, 44px = about 1 unit
             if (path.Contains("/Effects/")) return 48f;
             if (path.Contains("/Enemies/")) return 16f; // small pixel-art creature sprites, 16px = 1 unit
+            if (path.Contains("/Items/")) return 40f; // pickups, 8px coin = 0.2 units so it stays small
             return 800f;
         }
     }
