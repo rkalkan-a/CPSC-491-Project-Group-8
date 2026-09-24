@@ -410,7 +410,7 @@ GameObject:
   - component: {fileID: 244730613}
   - component: {fileID: 244730612}
   m_Layer: 0
-  m_Name: Door_North
+  m_Name: Door_North1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -566,7 +566,7 @@ GameObject:
   - component: {fileID: 283908367}
   - component: {fileID: 283908366}
   m_Layer: 0
-  m_Name: Door_West
+  m_Name: Door_West2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -581,7 +581,7 @@ Transform:
   m_GameObject: {fileID: 283908364}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8, y: 0, z: 0}
+  m_LocalPosition: {x: 8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -599,7 +599,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
+  side: 3
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
@@ -722,7 +722,7 @@ GameObject:
   - component: {fileID: 326354779}
   - component: {fileID: 326354778}
   m_Layer: 0
-  m_Name: Door_South
+  m_Name: Door_South1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -755,7 +755,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
+  side: 1
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
@@ -909,7 +909,7 @@ GameObject:
   - component: {fileID: 468015266}
   - component: {fileID: 468015265}
   m_Layer: 0
-  m_Name: Door_West
+  m_Name: Door_West1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -924,7 +924,7 @@ Transform:
   m_GameObject: {fileID: 468015263}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8, y: 0, z: 0}
+  m_LocalPosition: {x: 8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -942,8 +942,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
-  targetDoor: {fileID: 0}
+  side: 3
+  targetDoor: {fileID: 1865165961}
   arrivalDistance: 1.5
   isLocked: 0
 --- !u!61 &468015266
@@ -1065,7 +1065,7 @@ GameObject:
   - component: {fileID: 579535487}
   - component: {fileID: 579535486}
   m_Layer: 0
-  m_Name: Door_South
+  m_Name: Door_South2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1098,7 +1098,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
+  side: 1
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
@@ -1356,6 +1356,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 623899339}
+  - component: {fileID: 623899340}
   m_Layer: 0
   m_Name: Room_01
   m_TagString: Untagged
@@ -1388,6 +1389,22 @@ Transform:
   - {fileID: 468015264}
   m_Father: {fileID: 749880549}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &623899340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623899338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b6fc3a65762a47c5b6bda7d2ad464ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Room
+  roomId: Room
+  size: {x: 17, y: 10}
+  clearedOnEnter: 0
+  lockDoorsUntilCleared: 0
 --- !u!1 &742586957
 GameObject:
   m_ObjectHideFlags: 0
@@ -1944,7 +1961,7 @@ GameObject:
   - component: {fileID: 1381037476}
   - component: {fileID: 1381037475}
   m_Layer: 0
-  m_Name: Door_North
+  m_Name: Door_North2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2239,7 +2256,7 @@ GameObject:
   - component: {fileID: 1525410833}
   - component: {fileID: 1525410832}
   m_Layer: 0
-  m_Name: Door_East
+  m_Name: Door_East1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2254,7 +2271,7 @@ Transform:
   m_GameObject: {fileID: 1525410830}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8, y: 0, z: 0}
+  m_LocalPosition: {x: -8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2272,7 +2289,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
+  side: 2
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
@@ -2714,6 +2731,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1844187075}
+  - component: {fileID: 1844187076}
   m_Layer: 0
   m_Name: Room_02
   m_TagString: Untagged
@@ -2745,6 +2763,22 @@ Transform:
   - {fileID: 283908365}
   m_Father: {fileID: 749880549}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1844187076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1844187074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b6fc3a65762a47c5b6bda7d2ad464ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Room
+  roomId: Room
+  size: {x: 17, y: 10}
+  clearedOnEnter: 0
+  lockDoorsUntilCleared: 0
 --- !u!1 &1844931175
 GameObject:
   m_ObjectHideFlags: 0
@@ -2895,7 +2929,7 @@ GameObject:
   - component: {fileID: 1865165962}
   - component: {fileID: 1865165961}
   m_Layer: 0
-  m_Name: Door_East
+  m_Name: Door_East2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2910,7 +2944,7 @@ Transform:
   m_GameObject: {fileID: 1865165959}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8, y: 0, z: 0}
+  m_LocalPosition: {x: -8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2928,8 +2962,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
-  side: 0
-  targetDoor: {fileID: 0}
+  side: 2
+  targetDoor: {fileID: 468015265}
   arrivalDistance: 1.5
   isLocked: 0
 --- !u!61 &1865165962
