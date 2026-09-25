@@ -12,6 +12,7 @@ namespace DungeonCrawler.Rooms
 
         [SerializeField] private Room startingRoom;
         [SerializeField, Min(0f)] private float transitionLockTime = 0.2f; // stops you bouncing straight back through the door
+        [SerializeField] private bool playTransition = true;
 
         public Room CurrentRoom { get; private set; }
         public Room StartingRoom => startingRoom;
@@ -58,17 +59,28 @@ namespace DungeonCrawler.Rooms
         private IEnumerator TransitionRoutine(Door fromDoor, PlayerController player)
         {
             IsTransitioning = true;
-            //player.InputEnabled = false;
+            player.InputEnabled = false;
 
             Door toDoor = fromDoor.TargetDoor;
             Room toRoom = toDoor.Room;
+            var fx = playTransition ? RoomTransitionFX.Get() : null;
+
+            if (fx != null) yield return fx.Close(player.transform);
 
             player.TeleportTo(toDoor.ArrivalPosition);
             EnterRoom(toRoom);
+            // screen is black here so jump the camera straight to the new room instead of sliding
+            var cam = FindFirstObjectByType<RoomCamera>();
+            if (cam != null) cam.FocusRoom(toRoom, true);
 
+            if (fx != null)
+            {
+                yield return new WaitForSecondsRealtime(0.1f);
+                yield return fx.Open(player.transform);
+            }
+
+            player.InputEnabled = true;
             yield return new WaitForSeconds(transitionLockTime);
-
-            //player.InputEnabled = true;
             IsTransitioning = false;
         }
     }

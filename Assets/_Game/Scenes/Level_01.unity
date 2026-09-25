@@ -404,7 +404,7 @@ Transform:
   m_GameObject: {fileID: 306413982}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.3125, y: -0.6875, z: 0}
+  m_LocalPosition: {x: 11.6, y: -0.51, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -470,7 +470,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.85, y: 0.4}
+  m_Size: {x: 1.1, y: 0.45}
   m_EdgeRadius: 0
 --- !u!1 &339305033
 GameObject:
@@ -1706,8 +1706,8 @@ Transform:
   m_GameObject: {fileID: 823743375}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.07, y: 0.06, z: 1.37}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0}
+  m_LocalScale: {x: 1.3, y: 1.3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 306413983}
@@ -2119,6 +2119,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.UI.ChestPanel
   panelRoot: {fileID: 156740490}
+  titleFont: {fileID: 11400000, guid: 4eda90931fb077a4d91ebd55dd9e336b, type: 2}
 --- !u!114 &938680649
 MonoBehaviour:
   m_ObjectHideFlags: 0

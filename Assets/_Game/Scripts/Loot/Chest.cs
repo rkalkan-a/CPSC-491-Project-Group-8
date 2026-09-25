@@ -13,11 +13,13 @@ namespace DungeonCrawler.Loot
         [SerializeField] private Sprite openSprite;
 
         public bool IsOpen { get; private set; }
+        public SpriteRenderer Sprite => sprite;
 
         private void Awake()
         {
             if (sprite == null) sprite = GetComponentInChildren<SpriteRenderer>();
             if (sprite != null && closedSprite != null) sprite.sprite = closedSprite;
+            if (GetComponent<ChestGlow>() == null) gameObject.AddComponent<ChestGlow>();
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
@@ -29,6 +31,7 @@ namespace DungeonCrawler.Loot
 
         public void Open(PlayerController player)
         {
+            if (ChestPanel.Instance != null && ChestPanel.Instance.IsShowing) return;
             if (!IsOpen)
             {
                 IsOpen = true;
