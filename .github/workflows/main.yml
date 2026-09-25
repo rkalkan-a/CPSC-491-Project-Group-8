@@ -13,6 +13,10 @@ jobs:
     name: Run Unity tests
     runs-on: ubuntu-latest
     steps:
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
@@ -29,6 +33,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: ${{ env.UNITY_VERSION }}
+          customImage: unityci/editor:ubuntu-6000.6.0f1-base-3
           testMode: all
 
       - uses: actions/upload-artifact@v4
