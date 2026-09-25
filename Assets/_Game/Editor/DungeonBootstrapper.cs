@@ -534,22 +534,8 @@ namespace DungeonCrawler.EditorTools
             SetRef(chest, "closedSprite", closed);
             SetRef(chest, "openSprite", open);
 
-            // glow under it until it's opened
-            const string glowPath = "Assets/_Game/Art/Effects/glow.png";
-            ImportAsPixelSprite(glowPath, 48f);
-            var glowSprite = AssetDatabase.LoadAssetAtPath<Sprite>(glowPath);
-            var glowGo = new GameObject("Glow");
-            glowGo.transform.SetParent(go.transform, false);
-            glowGo.transform.localPosition = new Vector3(0f, 0.05f, 0f);
-            glowGo.transform.localScale = new Vector3(1.7f, 1.3f, 1f);
-            var glowSr = glowGo.AddComponent<SpriteRenderer>();
-            glowSr.sprite = glowSprite;
-            glowSr.color = new Color(1f, 0.85f, 0.5f, 0.4f);
-            glowSr.sortingOrder = 4;
-
-            var fx = go.AddComponent<ChestGlow>();
-            SetRef(fx, "glow", glowSr);
-            SetRef(fx, "sparkleSprite", square);
+            // glow + sparkles are built at runtime by ChestGlow
+            go.AddComponent<ChestGlow>();
         }
 
         private static void BuildChestPanel(Transform canvas)
