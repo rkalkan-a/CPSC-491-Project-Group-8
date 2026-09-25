@@ -56,7 +56,7 @@ namespace DungeonCrawler.Rooms
         private IEnumerator TransitionRoutine(Door fromDoor, PlayerController player)
         {
             IsTransitioning = true;
-            player.InputEnabled = false;
+            //player.InputEnabled = false;
 
             Door toDoor = fromDoor.TargetDoor;
             Room toRoom = toDoor.Room;
@@ -66,7 +66,7 @@ namespace DungeonCrawler.Rooms
 
             yield return new WaitForSeconds(transitionLockTime);
 
-            player.InputEnabled = true;
+            //player.InputEnabled = true;
             IsTransitioning = false;
         }
     }
