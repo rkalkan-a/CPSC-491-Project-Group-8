@@ -25,6 +25,7 @@ namespace DungeonCrawler.Rooms
         private readonly List<EnemySpawnPoint> enemySpawns = new();
         private readonly List<Enemy> aliveEnemies = new();
         private bool spawnedEnemies;
+        private readonly List<Renderer> hiddenRenderers = new();
 
         public IReadOnlyList<Door> Doors => doors;
         public IReadOnlyList<PlayerSpawnPoint> PlayerSpawns => playerSpawns;
@@ -34,6 +35,25 @@ namespace DungeonCrawler.Rooms
         private void Awake()
         {
             RefreshChildren();
+        }
+
+        // only the room you're in gets drawn, everything else is left as black void
+        public void SetVisible(bool visible)
+        {
+            if (visible)
+            {
+                foreach (var r in hiddenRenderers)
+                    if (r != null) r.enabled = true;
+                hiddenRenderers.Clear();
+                return;
+            }
+
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.enabled) continue; // leave anything that was already off (like an opened chest's glow) alone
+                r.enabled = false;
+                hiddenRenderers.Add(r);
+            }
         }
 
         public void RefreshChildren()

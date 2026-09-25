@@ -36,6 +36,8 @@ namespace DungeonCrawler.Rooms
         {
             if (room == null) return;
             CurrentRoom = room;
+            foreach (var r in FindObjectsByType<Room>(FindObjectsSortMode.None))
+                r.SetVisible(r == room);
             GameEvents.RaiseRoomEntered(room);
             room.OnPlayerEntered();
         }
