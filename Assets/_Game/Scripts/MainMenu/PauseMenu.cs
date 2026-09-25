@@ -3,6 +3,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using DungeonCrawler.UI;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -22,6 +23,10 @@ public class PauseMenu : MonoBehaviour
     void Update()
     {
         if (Keyboard.current.escapeKey.wasPressedThisFrame) {
+
+            // escape is closing the chest popup, don't pause too
+            if (ChestPanel.Instance != null && (ChestPanel.Instance.IsShowing || ChestPanel.ClosedOnFrame == Time.frameCount))
+                return;
 
             if (Container.activeSelf) {
                 Time.timeScale = 1f; 

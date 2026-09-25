@@ -179,6 +179,9 @@ MonoBehaviour:
   back: {fileID: 21300000, guid: d35988f0e955a4bbab9a03107e3283dc, type: 3}
   left: {fileID: 21300000, guid: 1467c7fa9d9564f88a92e639bdc33672, type: 3}
   right: {fileID: 21300000, guid: 5123131a0fddc4e9ebe0f38676547622, type: 3}
+  walkSide:
+  - {fileID: 21300000, guid: baab2a103ac74c87a0b7c68b2492b2ef, type: 3}
+  - {fileID: 21300000, guid: 7183187828d64500bb13b88f4bd44cae, type: 3}
   bobAmount: 0.05
   bobSpeed: 12
 --- !u!1 &6578517884657519725

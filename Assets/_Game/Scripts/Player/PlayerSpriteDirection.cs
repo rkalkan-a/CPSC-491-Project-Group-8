@@ -11,6 +11,8 @@ namespace DungeonCrawler.Player
         [SerializeField] private Sprite back;
         [SerializeField] private Sprite left;
         [SerializeField] private Sprite right;
+        [Tooltip("walk cycle drawn facing left. walking right uses the same frames flipped")]
+        [SerializeField] private Sprite[] walkSide;
 
         [SerializeField, Min(0f)] private float bobAmount = 0.05f;
         [SerializeField, Min(0f)] private float bobSpeed = 12f;
@@ -35,12 +37,22 @@ namespace DungeonCrawler.Player
 
             // side sprites win on diagonals since that's what reads best
             Sprite pick;
-            if (Mathf.Abs(dir.x) >= Mathf.Abs(dir.y))
+            bool flip = false;
+            bool side = Mathf.Abs(dir.x) >= Mathf.Abs(dir.y);
+            if (side && moving && walkSide != null && walkSide.Length > 0)
+            {
+                // one frame per step, synced with the bob so the feet land when the body dips
+                int step = Mathf.FloorToInt(bobTime / Mathf.PI);
+                pick = walkSide[step % walkSide.Length];
+                flip = dir.x > 0f;
+            }
+            else if (side)
                 pick = dir.x < 0f ? left : right;
             else
                 pick = dir.y > 0f ? back : front;
 
             if (pick != null && target.sprite != pick) target.sprite = pick;
+            target.flipX = flip;
 
             if (moving)
             {

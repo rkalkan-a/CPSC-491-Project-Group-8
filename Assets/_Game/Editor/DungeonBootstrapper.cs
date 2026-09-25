@@ -657,7 +657,6 @@ namespace DungeonCrawler.EditorTools
 
             var hud = canvasGo.AddComponent<HealthHUD>();
             SetRef(hud, "heartsRoot", heartsRect);
-            SetRef(hud, "heartSprite", square);
             SetRef(hud, "deathText", text);
 
             BuildChestPanel(canvasGo.transform);

@@ -10,16 +10,48 @@ namespace DungeonCrawler.UI
     public class HealthHUD : MonoBehaviour
     {
         [SerializeField] private RectTransform heartsRoot;
-        [SerializeField] private Sprite heartSprite;
         [SerializeField] private Text deathText;
         [SerializeField] private Color fullColor = new Color(0.9f, 0.15f, 0.2f);
         [SerializeField] private Color emptyColor = new Color(0.25f, 0.08f, 0.1f);
-        [SerializeField, Min(8f)] private float heartSize = 36f;
-        [SerializeField, Min(0f)] private float spacing = 8f;
+        [SerializeField, Min(1)] private int heartPixelScale = 4; // each art pixel becomes this many ui pixels
+        [SerializeField, Min(0f)] private float heartGap = 6f;
+        [SerializeField] private Vector2 screenMargin = new Vector2(32f, 28f);
+
+        // 13x12 pixel heart. o = outline, r = body, h = highlight, s = shade
+        private static readonly string[] HeartPixels =
+        {
+            "..ooo...ooo..",
+            ".ohhro.orrro.",
+            "ohhrrrorrrrro",
+            "ohrrrrrrrrrro",
+            "orrrrrrrrrrso",
+            "orrrrrrrrrrso",
+            ".orrrrrrrrso.",
+            "..orrrrrrso..",
+            "...orrrrso...",
+            "....orrso....",
+            ".....oso.....",
+            "......o......",
+        };
 
         private readonly List<Image> heartFills = new();
         private readonly List<GameObject> heartObjects = new();
         private Health tracked;
+        private Sprite fullHeart;
+        private Sprite emptyHeart;
+
+        private void Awake()
+        {
+            fullHeart = MakeHeartSprite(fullColor, 0.55f);
+            emptyHeart = MakeHeartSprite(emptyColor, 0.12f);
+
+            if (heartsRoot != null)
+            {
+                heartsRoot.anchorMin = heartsRoot.anchorMax = new Vector2(0f, 1f);
+                heartsRoot.pivot = new Vector2(0f, 1f);
+                heartsRoot.anchoredPosition = new Vector2(screenMargin.x, -screenMargin.y);
+            }
+        }
 
         private void OnEnable()
         {
@@ -86,18 +118,20 @@ namespace DungeonCrawler.UI
 
         private void MakeHeart(int index)
         {
+            var size = new Vector2(HeartPixels[0].Length, HeartPixels.Length) * heartPixelScale;
+
             var bg = new GameObject("Heart" + index, typeof(RectTransform), typeof(Image));
             bg.transform.SetParent(heartsRoot, false);
             var bgRect = (RectTransform)bg.transform;
             bgRect.anchorMin = bgRect.anchorMax = new Vector2(0f, 1f);
             bgRect.pivot = new Vector2(0f, 1f);
-            bgRect.sizeDelta = new Vector2(heartSize, heartSize);
-            bgRect.anchoredPosition = new Vector2(index * (heartSize + spacing), 0f);
+            bgRect.sizeDelta = size;
+            bgRect.anchoredPosition = new Vector2(index * (size.x + heartGap), 0f);
             var bgImage = bg.GetComponent<Image>();
-            bgImage.sprite = heartSprite;
-            bgImage.color = emptyColor;
+            bgImage.sprite = emptyHeart;
             bgImage.raycastTarget = false;
 
+            // full heart drawn on top, filled left to right so 1 hp shows as half a heart
             var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
             fill.transform.SetParent(bg.transform, false);
             var fillRect = (RectTransform)fill.transform;
@@ -105,8 +139,7 @@ namespace DungeonCrawler.UI
             fillRect.anchorMax = Vector2.one;
             fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
             var fillImage = fill.GetComponent<Image>();
-            fillImage.sprite = heartSprite;
-            fillImage.color = fullColor;
+            fillImage.sprite = fullHeart;
             fillImage.raycastTarget = false;
             fillImage.type = Image.Type.Filled;
             fillImage.fillMethod = Image.FillMethod.Horizontal;
@@ -115,6 +148,38 @@ namespace DungeonCrawler.UI
 
             heartObjects.Add(bg);
             heartFills.Add(fillImage);
+        }
+
+        private static Sprite MakeHeartSprite(Color body, float highlightAmount)
+        {
+            int w = HeartPixels[0].Length, h = HeartPixels.Length;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var outline = new Color(0.1f, 0.02f, 0.04f, 1f);
+            var highlight = Color.Lerp(body, Color.white, highlightAmount);
+            var shade = Color.Lerp(body, outline, 0.35f);
+
+            for (int row = 0; row < h; row++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    Color c = HeartPixels[row][x] switch
+                    {
+                        'o' => outline,
+                        'r' => body,
+                        'h' => highlight,
+                        's' => shade,
+                        _ => Color.clear,
+                    };
+                    tex.SetPixel(x, h - 1 - row, c); // texture rows go bottom up
+                }
+            }
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
         }
     }
 }

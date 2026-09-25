@@ -8,6 +8,8 @@ namespace DungeonCrawler.UI
     public class ChestPanel : MonoBehaviour
     {
         public static ChestPanel Instance { get; private set; }
+        // frame the panel was closed on, so the pause menu doesn't also react to that same escape press
+        public static int ClosedOnFrame { get; private set; } = -1;
 
         [SerializeField] private GameObject panelRoot;
 
@@ -35,6 +37,7 @@ namespace DungeonCrawler.UI
         public void Hide()
         {
             if (panelRoot != null) panelRoot.SetActive(false);
+            ClosedOnFrame = Time.frameCount;
             if (player != null) player.InputEnabled = true;
             player = null;
         }

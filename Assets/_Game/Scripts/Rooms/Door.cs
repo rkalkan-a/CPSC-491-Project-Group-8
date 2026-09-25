@@ -13,6 +13,9 @@ namespace DungeonCrawler.Rooms
         [SerializeField] private Door targetDoor;
         [SerializeField, Min(0.5f)] private float arrivalDistance = 1.5f; // how far into the room you land
         [SerializeField] private bool isLocked = false;
+        // off = travel as soon as you touch the door. on = you have to walk this far past the door's center first (like into a tunnel)
+        [SerializeField] private bool requireWalkIn = false;
+        [SerializeField, Min(0f)] private float walkInDepth = 0.2f;
 
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
@@ -56,9 +59,26 @@ namespace DungeonCrawler.Rooms
 
         private void OnTriggerEnter2D(Collider2D other)
         {
+            if (!requireWalkIn) TryTravel(other);
+        }
+
+        private void OnTriggerStay2D(Collider2D other)
+        {
+            if (requireWalkIn) TryTravel(other);
+        }
+
+        private void TryTravel(Collider2D other)
+        {
             if (isLocked || targetDoor == null) return;
             var player = other.GetComponentInParent<PlayerController>();
             if (player == null) return;
+
+            if (requireWalkIn)
+            {
+                Vector2 outward = -InwardDirection;
+                float depth = Vector2.Dot((Vector2)player.transform.position - (Vector2)transform.position, outward);
+                if (depth < walkInDepth) return;
+            }
 
             Debug.Log(
                 $"Source Door: {name}, " +
