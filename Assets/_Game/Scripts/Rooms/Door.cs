@@ -60,7 +60,20 @@ namespace DungeonCrawler.Rooms
             var player = other.GetComponentInParent<PlayerController>();
             if (player == null) return;
 
-            Debug.Log($"Travel: {Room?.RoomId} -> {targetDoor.Room?.RoomId}");
+            Debug.Log(
+                $"Source Door: {name}, " +
+                $"Source Room: {(Room != null ? Room.RoomId : "NULL")}, " +
+                $"Target Door: {(targetDoor != null ? targetDoor.name : "NULL")}, " +
+                $"Target Room: {(targetDoor?.Room != null ? targetDoor.Room.RoomId : "NULL")}"
+            );
+
+            if (RoomManager.Instance == null)
+            {
+                Debug.LogError("RoomManager.Instance is NULL!");
+                return;
+            }
+            Debug.Log("Calling RoomManager.TravelThrough...");
+            
             RoomManager.Instance?.TravelThrough(this, player);
         }
 
