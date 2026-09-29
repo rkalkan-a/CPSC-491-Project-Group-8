@@ -3,6 +3,9 @@ name: Unity CI
 on:
   push:
     branches: [main]
+  # combat tests must also run while a PR is open, not just after it merges
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 # the test runner posts a "Test Results" check on the commit
@@ -50,6 +53,8 @@ jobs:
   build:
     name: Build (${{ matrix.targetPlatform }})
     needs: test
+    # PRs only need the test gate; the full build runs once the code is on main
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       matrix:
