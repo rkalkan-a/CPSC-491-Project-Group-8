@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using DungeonCrawler.UI;
+using DungeonCrawler.Core;
 
 public class PauseMenu : MonoBehaviour
 {
@@ -48,5 +49,12 @@ public class PauseMenu : MonoBehaviour
     public void MainMenu() {
         Time.timeScale = 1f;
         SceneManager.LoadScene("Main Menu");
+    }
+
+    public void SetVolume(float volume)
+    {
+        GameSettings.Volume = volume;
+        AudioListener.volume = volume;
+        GameSettings.Save();
     }
 }
