@@ -81,7 +81,7 @@ namespace DungeonCrawler.Tests
             yield return RunUntilDestroyed(shot, 0.5f);
 
             Assert.AreEqual(before, health.Current, "a projectile must never damage its own owner");
-            Assert.IsNotNull(shot, "a projectile should pass straight through its owner, not die on it");
+            AssertStillAlive(shot, "a projectile should pass straight through its owner, not die on it");
         }
 
         // ---------- the three ways a shot ends ----------
@@ -94,7 +94,7 @@ namespace DungeonCrawler.Tests
             var shot = SpawnProjectile(Vector2.zero, Vector2.right, 1, LongRange);
             yield return RunUntilDestroyed(shot, Timeout);
 
-            Assert.IsNull(shot, "projectile should be destroyed by the enemy it hits");
+            AssertDestroyed(shot, "projectile should be destroyed by the enemy it hits");
         }
 
         [UnityTest]
@@ -105,7 +105,7 @@ namespace DungeonCrawler.Tests
             var shot = SpawnProjectile(Vector2.zero, Vector2.right, 1, LongRange);
             yield return RunUntilDestroyed(shot, Timeout);
 
-            Assert.IsNull(shot, "projectile should be stopped by a solid wall, not fly through it");
+            AssertDestroyed(shot, "projectile should be stopped by a solid wall, not fly through it");
         }
 
         [UnityTest]
@@ -114,7 +114,7 @@ namespace DungeonCrawler.Tests
             var shot = SpawnProjectile(Vector2.zero, Vector2.right, 1, range: 3f);
             yield return RunUntilDestroyed(shot, Timeout);
 
-            Assert.IsNull(shot, "projectile should destroy itself once it runs out of range");
+            AssertDestroyed(shot, "projectile should destroy itself once it runs out of range");
         }
 
         [UnityTest]
@@ -133,7 +133,7 @@ namespace DungeonCrawler.Tests
                 elapsed += Time.fixedDeltaTime;
             }
 
-            Assert.IsNull(shot, "projectile should have expired within the timeout");
+            AssertDestroyed(shot, "projectile should have expired within the timeout");
 
             // allow a couple of physics steps of slack either side
             float tolerance = Speed * Time.fixedDeltaTime * 2f + 0.1f;
@@ -149,7 +149,7 @@ namespace DungeonCrawler.Tests
             var shot = SpawnProjectile(Vector2.zero, Vector2.right, 1, LongRange);
             yield return RunUntilDestroyed(shot, 0.5f);
 
-            Assert.IsNotNull(shot, "a non-solid trigger should not stop a projectile");
+            AssertStillAlive(shot, "a non-solid trigger should not stop a projectile");
         }
 
         // ---------- fixtures ----------
@@ -215,6 +215,20 @@ namespace DungeonCrawler.Tests
             col.size = new Vector2(1f, 4f);
             col.isTrigger = true;
             return go;
+        }
+
+        // NUnit's Assert.IsNull compares real object references, but a destroyed
+        // UnityEngine.Object is not a null reference - Unity only reports it as null through
+        // its own overloaded == operator. These helpers go through that operator, so the
+        // "was it destroyed?" check is actually meaningful.
+        private static void AssertDestroyed(GameObject go, string message)
+        {
+            Assert.IsTrue(go == null, message);
+        }
+
+        private static void AssertStillAlive(GameObject go, string message)
+        {
+            Assert.IsFalse(go == null, message);
         }
 
         private static IEnumerator RunUntilDestroyed(GameObject go, float timeout)
