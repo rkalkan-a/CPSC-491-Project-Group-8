@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using DungeonCrawler.Core;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -20,10 +21,8 @@ public class MainMenuController : MonoBehaviour
 
     void Start()
     {
-        // Load saved volume
-        float savedVolume = PlayerPrefs.GetFloat("Volume", 1f);
-        volumeSlider.value = savedVolume;
-        AudioListener.volume = savedVolume;
+        volumeSlider.value = GameSettings.Volume;
+        AudioListener.volume = GameSettings.Volume;
 
         // Set fullscreen toggle to current fullscreen state
         fullscreenToggle.isOn = Screen.fullScreen;
@@ -85,10 +84,9 @@ public class MainMenuController : MonoBehaviour
 
     public void SetVolume(float volume)
     {
+        GameSettings.Volume = volume;
         AudioListener.volume = volume;
-
-        PlayerPrefs.SetFloat("Volume", volume);
-        PlayerPrefs.Save();
+        GameSettings.Save();
     }
 
     // -------------------------
