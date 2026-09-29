@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# the test runner posts a "Test Results" check on the commit
+permissions:
+  contents: read
+  checks: write
+
 env:
   UNITY_VERSION: 6000.6.0f1
 
