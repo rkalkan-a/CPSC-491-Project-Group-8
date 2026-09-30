@@ -1,6 +1,7 @@
 using UnityEngine;
 using DungeonCrawler.Player;
 using DungeonCrawler.UI;
+using DungeonCrawler.Audio;
 
 namespace DungeonCrawler.Loot
 {
@@ -11,6 +12,7 @@ namespace DungeonCrawler.Loot
         [SerializeField] private SpriteRenderer sprite;
         [SerializeField] private Sprite closedSprite;
         [SerializeField] private Sprite openSprite;
+        [SerializeField] private AudioClip openSound;
 
         public bool IsOpen { get; private set; }
         public SpriteRenderer Sprite => sprite;
@@ -31,13 +33,18 @@ namespace DungeonCrawler.Loot
 
         public void Open(PlayerController player)
         {
-            if (ChestPanel.Instance != null && ChestPanel.Instance.IsShowing) return;
             if (!IsOpen)
             {
                 IsOpen = true;
-                if (sprite != null && openSprite != null) sprite.sprite = openSprite;
+
+                if (sprite != null && openSprite != null)
+                    sprite.sprite = openSprite;
+
+                SFXManager.Instance.PlaySFX(openSound);
             }
-            if (ChestPanel.Instance != null) ChestPanel.Instance.Show(this, player);
+
+            if (ChestPanel.Instance != null)
+                ChestPanel.Instance.Show(this, player);
         }
     }
 }
