@@ -3,17 +3,20 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using DungeonCrawler.Core;
 
 namespace DungeonCrawler.Tests
 {
     public class MainMenuTests
     {
         private float originalVolume;
+        private float originalSavedVolume;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
             originalVolume = AudioListener.volume;
+            originalSavedVolume = GameSettings.Volume;
 
             Time.timeScale = 1f;
 
@@ -28,8 +31,9 @@ namespace DungeonCrawler.Tests
         {
             AudioListener.volume = originalVolume;
 
-            PlayerPrefs.DeleteKey("Volume");
-            PlayerPrefs.Save();
+            // put the saved volume back so the tests don't change the real setting
+            GameSettings.Volume = originalSavedVolume;
+            GameSettings.Save();
 
             Time.timeScale = 1f;
 
@@ -130,7 +134,7 @@ namespace DungeonCrawler.Tests
 
             Assert.AreEqual(
                 testVolume,
-                PlayerPrefs.GetFloat("Volume"),
+                GameSettings.Volume,
                 0.01f,
                 "Volume preference should be saved"
             );
