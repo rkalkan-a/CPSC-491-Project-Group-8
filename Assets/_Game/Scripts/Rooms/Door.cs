@@ -9,6 +9,7 @@ namespace DungeonCrawler.Rooms
     [RequireComponent(typeof(BoxCollider2D))]
     public class Door : MonoBehaviour
     {
+        [SerializeField] private SpriteRenderer doorRenderer;
         [SerializeField] private DoorSide side = DoorSide.North;
         [SerializeField] private Door targetDoor;
         [SerializeField, Min(0.5f)] private float arrivalDistance = 1.5f; // how far into the room you land
@@ -20,7 +21,15 @@ namespace DungeonCrawler.Rooms
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
         public bool IsConnected => targetDoor != null;
-        public bool IsLocked { get => isLocked; set => isLocked = value; }
+        public bool IsLocked
+        {
+            get => isLocked;
+            set
+            {
+                isLocked = value;
+                UpdateDoorColor();
+            }
+        }
         public Room Room => GetComponentInParent<Room>();
 
         private SpriteRenderer sprite;
@@ -42,6 +51,25 @@ namespace DungeonCrawler.Rooms
         {
             var col = GetComponent<Collider2D>();
             if (col != null) col.isTrigger = true;
+        }
+
+        private void UpdateDoorColor()
+        {
+            if (doorRenderer == null)
+                doorRenderer = GetComponentInChildren<SpriteRenderer>(true);
+
+            if (doorRenderer == null)
+            {
+                Debug.LogWarning($"No SpriteRenderer found for door {name}", this);
+                return;
+            }
+
+            if (isLocked)
+                doorRenderer.color = Color.red;
+            else if (targetDoor != null)
+                doorRenderer.color = Color.green;
+            else
+                doorRenderer.color = Color.yellow;
         }
 
         private void Awake()
@@ -100,18 +128,54 @@ namespace DungeonCrawler.Rooms
         public void Link(Door other)
         {
             targetDoor = other;
-            if (other != null) other.targetDoor = this;
+
+            if (other != null)
+            {
+                other.targetDoor = this;
+                other.UpdateDoorColor();
+            }
+
+            UpdateDoorColor();
+        }
+
+        private void Start()
+        {
+            UpdateDoorColor();
         }
 
         private void OnDrawGizmos()
         {
-            Gizmos.color = isLocked ? Color.red : Color.yellow;
-            Gizmos.DrawWireCube(transform.position, new Vector3(0.9f, 0.9f, 0f));
-            Gizmos.DrawLine(transform.position, ArrivalPosition);
+            if (isLocked)
+            {
+                Gizmos.color = Color.red;
+            }
+            else if (targetDoor != null)
+            {
+                Gizmos.color = Color.green;
+            }
+            else
+            {
+                Gizmos.color = Color.yellow;
+            }
+
+            Gizmos.DrawWireCube(
+                transform.position,
+                new Vector3(0.9f, 0.9f, 0f)
+            );
+
+            Gizmos.DrawLine(
+                transform.position,
+                ArrivalPosition
+            );
+
             if (targetDoor != null)
             {
-                Gizmos.color = new Color(1f, 0.6f, 0f, 0.6f);
-                Gizmos.DrawLine(transform.position, targetDoor.transform.position);
+                Gizmos.color = Color.green;
+
+                Gizmos.DrawLine(
+                    transform.position,
+                    targetDoor.transform.position
+                );
             }
         }
     }
