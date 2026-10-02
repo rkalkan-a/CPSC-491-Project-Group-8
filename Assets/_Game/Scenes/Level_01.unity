@@ -5836,6 +5836,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2229356486034922812, guid: ae1c61dcdb6eb6d49a56477e3e1a41f3, type: 3}
+      propertyPath: volumeSlider
+      value: 
+      objectReference: {fileID: 1878665978}
     - target: {fileID: 2305500821279861863, guid: ae1c61dcdb6eb6d49a56477e3e1a41f3, type: 3}
       propertyPath: m_fontAsset
       value: 
