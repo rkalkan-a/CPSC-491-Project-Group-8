@@ -3,12 +3,12 @@ name: Unity CI
 on:
   push:
     branches: [main]
-  # combat tests must also run while a PR is open, not just after it merges
+
   pull_request:
     branches: [main]
+
   workflow_dispatch:
 
-# the test runner posts a "Test Results" check on the commit
 permissions:
   contents: read
   checks: write
@@ -20,20 +20,37 @@ jobs:
   test:
     name: Run Unity tests
     runs-on: ubuntu-latest
+
     steps:
-      - uses: jlumbroso/free-disk-space@v1.3.1
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
-          tool-cache: false
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-test-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-test-
+      - name: Report disk space before Unity tests
+        run: |
+          echo "=== Disk space ==="
+          df -h /
 
-      - uses: game-ci/unity-test-runner@v4
+          echo
+          echo "=== Docker disk usage ==="
+          docker system df || true
+
+          echo
+          echo "=== Largest root directories ==="
+          sudo du -xh -d 1 / 2>/dev/null | sort -h | tail -20
+
+      - name: Run Unity tests
+        uses: game-ci/unity-test-runner@v4
         id: tests
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -44,7 +61,8 @@ jobs:
           customImage: unityci/editor:ubuntu-6000.6.0f1-base-3
           testMode: all
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: TestResults-${{ github.run_number }}
@@ -53,27 +71,56 @@ jobs:
   build:
     name: Build (${{ matrix.targetPlatform }})
     needs: test
-    # PRs only need the test gate; the full build runs once the code is on main
+
+    # PRs only need to pass tests.
+    # Full builds run after code reaches main.
     if: github.event_name != 'pull_request'
+
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        targetPlatform: [StandaloneOSX]
+        targetPlatform:
+          - StandaloneOSX
+
     steps:
-      - uses: jlumbroso/free-disk-space@v1.3.1
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
-          tool-cache: false
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/cache@v4
+      - name: Restore Unity Library cache
+        uses: actions/cache@v4
         with:
           path: Library
           key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-${{ matrix.targetPlatform }}-
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
 
-      # version is only applied to the CI build, ProjectSettings stays untouched
-      - uses: game-ci/unity-builder@v4
+      - name: Report disk space before Unity build
+        run: |
+          echo "=== Disk space ==="
+          df -h /
+
+          echo
+          echo "=== Docker disk usage ==="
+          docker system df || true
+
+          echo
+          echo "=== Library size ==="
+          du -sh Library || true
+
+      - name: Build Unity project
+        uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -85,7 +132,8 @@ jobs:
           versioning: Custom
           version: 0.0.${{ github.run_number }}
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Unity build
+        uses: actions/upload-artifact@v4
         with:
           name: UnityBuild-${{ github.run_number }}
           path: build
