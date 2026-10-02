@@ -48,7 +48,7 @@ namespace DungeonCrawler.Player
         }
         private void Update()
         {
-            if (moveAction == null || !InputEnabled)
+            if (moveAction == null || !InputEnabled || PauseMenu.IsPaused)
             {
                 MoveInput = Vector2.zero;
                 return;
