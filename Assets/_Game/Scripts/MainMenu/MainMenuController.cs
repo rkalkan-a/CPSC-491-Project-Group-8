@@ -16,6 +16,7 @@ public class MainMenuController : MonoBehaviour
     public Slider volumeSlider;
     public Toggle fullscreenToggle;
     public TMP_Dropdown resolutionDropdown;
+    public Slider brightnessSlider;
 
     private Resolution[] resolutions;
 
@@ -23,6 +24,8 @@ public class MainMenuController : MonoBehaviour
     {
         volumeSlider.value = GameSettings.Volume;
         AudioListener.volume = GameSettings.Volume;
+
+        brightnessSlider.value = GameSettings.Brightness;
 
         // Set fullscreen toggle to current fullscreen state
         fullscreenToggle.isOn = Screen.fullScreen;
@@ -86,6 +89,16 @@ public class MainMenuController : MonoBehaviour
     {
         GameSettings.Volume = volume;
         AudioListener.volume = volume;
+        GameSettings.Save();
+    }
+
+    // -------------------------
+    // BRIGHTNESS
+    // -------------------------
+
+    public void SetBrightness(float brightness)
+    {
+        GameSettings.Brightness = brightness;
         GameSettings.Save();
     }
 
