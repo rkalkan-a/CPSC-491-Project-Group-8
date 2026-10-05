@@ -3,23 +3,9 @@ name: Unity CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'CICD/**'
-      - 'docs/**'
-      - '.gitignore'
 
-  # combat tests must also run while a PR is open, not just after it merges
   pull_request:
     branches: [main]
-    # a documentation-only change cannot break the game, so don't spend ~20
-    # minutes of runner time pulling the Unity image to prove it.
-    # (repeated rather than shared - GitHub Actions does not support YAML anchors)
-    paths-ignore:
-      - '**.md'
-      - 'CICD/**'
-      - 'docs/**'
-      - '.gitignore'
 
   workflow_dispatch:
 
