@@ -25,7 +25,12 @@ public class MainMenuController : MonoBehaviour
         volumeSlider.value = GameSettings.Volume;
         AudioListener.volume = GameSettings.Volume;
 
-        brightnessSlider.value = GameSettings.Brightness;
+        // The brightness slider UI has not been built in the Main Menu scene yet, so
+        // this reference is unassigned and dereferencing it threw on every Start().
+        // SettingsApplier still applies the saved brightness at runtime via its
+        // overlay, so nothing is lost by skipping the slider until the UI exists.
+        if (brightnessSlider != null)
+            brightnessSlider.value = GameSettings.Brightness;
 
         // Set fullscreen toggle to current fullscreen state
         fullscreenToggle.isOn = Screen.fullScreen;
