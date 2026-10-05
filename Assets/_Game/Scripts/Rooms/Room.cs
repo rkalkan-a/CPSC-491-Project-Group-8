@@ -32,6 +32,10 @@ namespace DungeonCrawler.Rooms
         public IReadOnlyList<EnemySpawnPoint> EnemySpawns => enemySpawns;
         public int AliveEnemyCount => aliveEnemies.Count;
 
+        public void SetRoomId(string id)
+        {
+            roomId = id;
+        }
         private void Awake()
         {
             RefreshChildren();

@@ -39,17 +39,16 @@ namespace DungeonCrawler.Player
 
         private void OnEnable()
         {
-            playerMap?.Enable();
+            moveAction?.Enable();
         }
 
         private void OnDisable()
         {
-            playerMap?.Disable();
+            moveAction?.Disable();
         }
-
         private void Update()
         {
-            if (moveAction == null || !InputEnabled)
+            if (moveAction == null || !InputEnabled || PauseMenu.IsPaused)
             {
                 MoveInput = Vector2.zero;
                 return;
