@@ -45,7 +45,8 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          # keep swap on: removing it frees 0B of disk and leaves Unity no memory headroom
+          swap-storage: false
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -108,7 +109,8 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          # keep swap on: removing it frees 0B of disk and leaves Unity no memory headroom
+          swap-storage: false
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -134,7 +136,35 @@ jobs:
           echo "=== Library size ==="
           du -sh Library || true
 
+      # the runner sometimes kills Unity right at startup (exit code 137) with
+      # identical inputs, so the first attempt is allowed to fail and is retried once
       - name: Build Unity project
+        id: build
+        continue-on-error: true
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: CPSC491-Group8
+          versioning: Custom
+          version: 0.0.${{ github.run_number }}
+
+      - name: Report memory after failed build
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "=== Memory ==="
+          free -h
+
+          echo
+          echo "=== Out-of-memory kills ==="
+          sudo dmesg | grep -iE "out of memory|oom-kill|killed process" || echo "none found"
+
+      - name: Build Unity project (retry)
+        if: steps.build.outcome == 'failure'
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
