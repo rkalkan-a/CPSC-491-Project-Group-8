@@ -17,23 +17,6 @@ namespace DungeonCrawler.UI
         [SerializeField, Min(0f)] private float heartGap = 6f;
         [SerializeField] private Vector2 screenMargin = new Vector2(32f, 28f);
 
-        // 13x12 pixel heart. o = outline, r = body, h = highlight, s = shade
-        private static readonly string[] HeartPixels =
-        {
-            "..ooo...ooo..",
-            ".ohhro.orrro.",
-            "ohhrrrorrrrro",
-            "ohrrrrrrrrrro",
-            "orrrrrrrrrrso",
-            "orrrrrrrrrrso",
-            ".orrrrrrrrso.",
-            "..orrrrrrso..",
-            "...orrrrso...",
-            "....orrso....",
-            ".....oso.....",
-            "......o......",
-        };
-
         private readonly List<Image> heartFills = new();
         private readonly List<GameObject> heartObjects = new();
         private Health tracked;
@@ -42,8 +25,8 @@ namespace DungeonCrawler.UI
 
         private void Awake()
         {
-            fullHeart = MakeHeartSprite(fullColor, 0.55f);
-            emptyHeart = MakeHeartSprite(emptyColor, 0.12f);
+            fullHeart = PixelUI.Heart(fullColor, 0.55f);
+            emptyHeart = PixelUI.Heart(emptyColor, 0.12f);
 
             if (heartsRoot != null)
             {
@@ -118,7 +101,7 @@ namespace DungeonCrawler.UI
 
         private void MakeHeart(int index)
         {
-            var size = new Vector2(HeartPixels[0].Length, HeartPixels.Length) * heartPixelScale;
+            var size = (Vector2)PixelUI.HeartSize * heartPixelScale;
 
             var bg = new GameObject("Heart" + index, typeof(RectTransform), typeof(Image));
             bg.transform.SetParent(heartsRoot, false);
@@ -148,38 +131,6 @@ namespace DungeonCrawler.UI
 
             heartObjects.Add(bg);
             heartFills.Add(fillImage);
-        }
-
-        private static Sprite MakeHeartSprite(Color body, float highlightAmount)
-        {
-            int w = HeartPixels[0].Length, h = HeartPixels.Length;
-            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-
-            var outline = new Color(0.1f, 0.02f, 0.04f, 1f);
-            var highlight = Color.Lerp(body, Color.white, highlightAmount);
-            var shade = Color.Lerp(body, outline, 0.35f);
-
-            for (int row = 0; row < h; row++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    Color c = HeartPixels[row][x] switch
-                    {
-                        'o' => outline,
-                        'r' => body,
-                        'h' => highlight,
-                        's' => shade,
-                        _ => Color.clear,
-                    };
-                    tex.SetPixel(x, h - 1 - row, c); // texture rows go bottom up
-                }
-            }
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
         }
     }
 }

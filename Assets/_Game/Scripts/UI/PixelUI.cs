@@ -102,5 +102,53 @@ namespace DungeonCrawler.UI
             tex.Apply();
             return Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
+
+        // 13x12 pixel heart. o = outline, r = body, h = highlight, s = shade
+        private static readonly string[] HeartPixels =
+        {
+            "..ooo...ooo..",
+            ".ohhro.orrro.",
+            "ohhrrrorrrrro",
+            "ohrrrrrrrrrro",
+            "orrrrrrrrrrso",
+            "orrrrrrrrrrso",
+            ".orrrrrrrrso.",
+            "..orrrrrrso..",
+            "...orrrrso...",
+            "....orrso....",
+            ".....oso.....",
+            "......o......",
+        };
+
+        public static Vector2Int HeartSize => new Vector2Int(HeartPixels[0].Length, HeartPixels.Length);
+
+        // used by the health hud and by heart pickups so they always match
+        public static Sprite Heart(Color body, float highlightAmount, float pixelsPerUnit = 100f)
+        {
+            int w = HeartPixels[0].Length, h = HeartPixels.Length;
+            var tex = NewTexture(w, h, true);
+
+            var outline = new Color(0.1f, 0.02f, 0.04f, 1f);
+            var highlight = Color.Lerp(body, Color.white, highlightAmount);
+            var shade = Color.Lerp(body, outline, 0.35f);
+
+            for (int row = 0; row < h; row++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    Color c = HeartPixels[row][x] switch
+                    {
+                        'o' => outline,
+                        'r' => body,
+                        'h' => highlight,
+                        's' => shade,
+                        _ => Color.clear,
+                    };
+                    tex.SetPixel(x, h - 1 - row, c); // texture rows go bottom up
+                }
+            }
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using DungeonCrawler.Combat;
 using DungeonCrawler.Core;
+using DungeonCrawler.Loot;
 using DungeonCrawler.Player;
 using DungeonCrawler.Rooms;
 
@@ -38,6 +39,8 @@ namespace DungeonCrawler.Enemies
             health = GetComponent<Health>();
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
+
+            if (GetComponent<LootDropper>() == null) gameObject.AddComponent<LootDropper>();
         }
 
         private void OnEnable()
