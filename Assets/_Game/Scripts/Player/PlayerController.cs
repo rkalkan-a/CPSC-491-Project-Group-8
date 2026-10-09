@@ -27,6 +27,9 @@ namespace DungeonCrawler.Player
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
 
+            // melee needs nothing assigned in the editor, so every player gets it automatically
+            if (GetComponent<PlayerMelee>() == null) gameObject.AddComponent<PlayerMelee>();
+
             if (inputActions == null)
             {
                 Debug.LogError("PlayerController needs the InputSystem_Actions asset assigned", this);
