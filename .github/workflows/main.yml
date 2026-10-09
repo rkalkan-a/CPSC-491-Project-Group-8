@@ -45,7 +45,7 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          # keep swap on: removing it frees 0B of disk and leaves Unity no memory headroom
+          # removing swap frees 0B of disk on these runners, so leave it alone
           swap-storage: false
 
       - name: Checkout repository
@@ -109,7 +109,7 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          # keep swap on: removing it frees 0B of disk and leaves Unity no memory headroom
+          # removing swap frees 0B of disk on these runners, so leave it alone
           swap-storage: false
 
       - name: Checkout repository
@@ -136,8 +136,9 @@ jobs:
           echo "=== Library size ==="
           du -sh Library || true
 
-      # the runner sometimes kills Unity right at startup (exit code 137) with
-      # identical inputs, so the first attempt is allowed to fail and is retried once
+      # Unity is sometimes killed about a second after it starts on the runner (exit code 137),
+      # with identical inputs. it is not an out-of-memory kill (checked with dmesg in run #52)
+      # and the cause is unknown, so the build gets up to three attempts
       - name: Build Unity project
         id: build
         continue-on-error: true
@@ -163,8 +164,24 @@ jobs:
           echo "=== Out-of-memory kills ==="
           sudo dmesg | grep -iE "out of memory|oom-kill|killed process" || echo "none found"
 
-      - name: Build Unity project (retry)
+      - name: Build Unity project (attempt 2)
+        id: build2
         if: steps.build.outcome == 'failure'
+        continue-on-error: true
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: CPSC491-Group8
+          versioning: Custom
+          version: 0.0.${{ github.run_number }}
+
+      - name: Build Unity project (attempt 3)
+        if: steps.build2.outcome == 'failure'
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
