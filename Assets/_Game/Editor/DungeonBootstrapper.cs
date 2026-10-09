@@ -189,6 +189,70 @@ namespace DungeonCrawler.EditorTools
         }
 
         // refreshes the player prefab (art, components) without rebuilding the whole level
+        // swaps the grey placeholder Room_01 in the open scene for the painted dungeon room.
+        // everything else in the scene (menus, audio, hud, the other rooms) is left as it is,
+        // unlike Build Starter Level which rebuilds the whole scene from scratch
+        [MenuItem("Tools/Dungeon/Replace Room_01 With Dungeon Room", priority = 2)]
+        public static void ReplaceRoom01WithDungeonRoom()
+        {
+            Room old = null;
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+                if (r.name == "Room_01") old = r;
+            if (old == null)
+            {
+                Debug.LogWarning("No Room_01 in the open scene, nothing to replace.");
+                return;
+            }
+            if (!File.Exists(DungeonMapPath))
+            {
+                Debug.LogWarning("No dungeon map at " + DungeonMapPath);
+                return;
+            }
+
+            Transform parent = old.transform.parent;
+            Vector2 oldCenter = old.transform.position;
+            float oldHalfW = old.Size.x * 0.5f;
+            float newHalfW = (LoadMapSprite(DungeonMapPath, DungeonPixelsPerUnit).texture.width / DungeonPixelsPerUnit) * 0.5f;
+            float grow = newHalfW - oldHalfW;
+
+            // the dungeon room is wider. keep its right edge where the old room's was (the forest is on that
+            // side and holds the player start), and push every room on the left further left to make space
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+            {
+                if (r == old || r.transform.position.x >= oldCenter.x) continue;
+                r.transform.position += Vector3.left * (grow * 2f);
+                EditorUtility.SetDirty(r.transform);
+            }
+
+            Room dungeon = BuildMapRoom(parent, "Dungeon_01", DungeonMapPath, DungeonCollidersPath, DungeonPixelsPerUnit,
+                oldCenter + Vector2.left * grow, false);
+            dungeon.transform.SetSiblingIndex(old.transform.GetSiblingIndex());
+            Door north = AddMapDoor(dungeon, DoorSide.North, DungeonPixelsPerUnit, 768f, 200f, new Vector2(1.6f, 0.8f));  // arch at the top, leads deeper
+            Door south = AddMapDoor(dungeon, DoorSide.South, DungeonPixelsPerUnit, 1232f, 935f, new Vector2(1.4f, 0.8f)); // bottom right doorway, back to the forest
+            AddEnemySpawn(dungeon, MapPixelToWorld(dungeon, DungeonPixelsPerUnit, 500f, 480f));
+            AddEnemySpawn(dungeon, MapPixelToWorld(dungeon, DungeonPixelsPerUnit, 900f, 560f));
+            AddEnemySpawn(dungeon, MapPixelToWorld(dungeon, DungeonPixelsPerUnit, 300f, 350f));
+
+            // anything that led into the old room now leads into the dungeon room.
+            // the old east door faced the forest (now the south doorway), the old west door led deeper (now the north arch)
+            foreach (var door in Object.FindObjectsByType<Door>(FindObjectsSortMode.None))
+            {
+                if (door.TargetDoor == null || door.Room == old || door.TargetDoor.Room != old) continue;
+                Door replacement = door.TargetDoor.Side == DoorSide.East ? south : north;
+                door.Link(replacement);
+                EditorUtility.SetDirty(door);
+                EditorUtility.SetDirty(replacement);
+            }
+
+            Object.DestroyImmediate(old.gameObject);
+
+            // gives the new spawn points (and any other empty ones) an enemy to spawn
+            EnemyBuilder.SetupEnemiesInScene();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("Room_01 replaced with Dungeon_01. Save the scene (Cmd+S).");
+        }
+
         [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
         public static void UpdatePlayerPrefab()
         {
