@@ -7,7 +7,7 @@ using DungeonCrawler.Core;
 
 namespace DungeonCrawler.Tests
 {
-    public class AudioTests
+    public class AudioSettingsTests
     {
         private float originalSavedVolume;
 
