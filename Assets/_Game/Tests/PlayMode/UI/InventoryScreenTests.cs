@@ -87,6 +87,20 @@ namespace DungeonCrawler.Tests
             Assert.IsNotNull(hint.Find("InventoryButton"), "the hint should include the inventory button");
         }
 
+        [UnityTest]
+        public IEnumerator PuttingOnArmor_ShowsTheUnlockBanner()
+        {
+            SpawnHud();
+            var player = SpawnPlayer();
+            yield return null;
+
+            Assert.IsFalse(UnlockBanner.Instance.IsShowing, "the banner shouldn't be up before anything is unlocked");
+            player.GetComponent<PlayerArmor>().Equip();
+
+            Assert.IsTrue(UnlockBanner.Instance.IsShowing);
+            StringAssert.Contains("LEATHER ARMOR", UnlockBanner.Instance.Title);
+        }
+
         // ---------- fixtures ----------
 
         private ChestPanel SpawnHud()

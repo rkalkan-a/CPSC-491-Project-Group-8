@@ -14,6 +14,44 @@ namespace DungeonCrawler.Player
         [Tooltip("walk cycle drawn facing left. walking right uses the same frames flipped")]
         [SerializeField] private Sprite[] walkSide;
 
+        [Header("Leather armor")]
+        [SerializeField] private Sprite armoredFront;
+        [SerializeField] private Sprite armoredBack;
+        [SerializeField] private Sprite armoredLeft;
+        [SerializeField] private Sprite armoredRight;
+        [SerializeField] private Sprite[] armoredWalkSide;
+
+        [Header("Chain mail")]
+        [SerializeField] private Sprite chainFront;
+        [SerializeField] private Sprite chainBack;
+        [SerializeField] private Sprite chainLeft;
+        [SerializeField] private Sprite chainRight;
+        [SerializeField] private Sprite[] chainWalkSide;
+
+        // which armor the sprites show. PlayerArmor sets this when armor is put on
+        public ArmorTier Tier { get; set; } = ArmorTier.None;
+
+        // what the character looks like from the front right now, for the inventory portrait
+        public Sprite FrontSprite => Pick(front, armoredFront, chainFront);
+
+        // the sprite for the armor being worn, falling back to a lower tier (then no armor) if a sprite is missing
+        private Sprite Pick(Sprite normal, Sprite leather, Sprite chain)
+        {
+            if (Tier >= ArmorTier.ChainMail && chain != null) return chain;
+            if (Tier >= ArmorTier.Leather && leather != null) return leather;
+            return normal;
+        }
+
+        private Sprite[] WalkFrames
+        {
+            get
+            {
+                if (Tier >= ArmorTier.ChainMail && chainWalkSide != null && chainWalkSide.Length > 0) return chainWalkSide;
+                if (Tier >= ArmorTier.Leather && armoredWalkSide != null && armoredWalkSide.Length > 0) return armoredWalkSide;
+                return walkSide;
+            }
+        }
+
         [SerializeField, Min(0f)] private float bobAmount = 0.05f;
         [SerializeField, Min(0f)] private float bobSpeed = 12f;
 
@@ -39,17 +77,18 @@ namespace DungeonCrawler.Player
             Sprite pick;
             bool flip = false;
             bool side = Mathf.Abs(dir.x) >= Mathf.Abs(dir.y);
-            if (side && moving && walkSide != null && walkSide.Length > 0)
+            var walk = WalkFrames;
+            if (side && moving && walk != null && walk.Length > 0)
             {
                 // one frame per step, synced with the bob so the feet land when the body dips
                 int step = Mathf.FloorToInt(bobTime / Mathf.PI);
-                pick = walkSide[step % walkSide.Length];
+                pick = walk[step % walk.Length];
                 flip = dir.x > 0f;
             }
             else if (side)
-                pick = dir.x < 0f ? left : right;
+                pick = dir.x < 0f ? Pick(left, armoredLeft, chainLeft) : Pick(right, armoredRight, chainRight);
             else
-                pick = dir.y > 0f ? back : front;
+                pick = dir.y > 0f ? Pick(back, armoredBack, chainBack) : Pick(front, armoredFront, chainFront);
 
             if (pick != null && target.sprite != pick) target.sprite = pick;
             target.flipX = flip;

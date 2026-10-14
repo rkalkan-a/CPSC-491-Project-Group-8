@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using DungeonCrawler.Combat;
 
@@ -25,11 +26,22 @@ namespace DungeonCrawler.Tests
 
         private readonly List<GameObject> spawned = new List<GameObject>();
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
             // PauseMenu zeroes the timescale in normal play; make sure physics actually runs here
             Time.timeScale = 1f;
+
+            // tests that run before these (menus, music) leave Level_01 loaded, and its walls sit right
+            // where these shots are fired. start every test in an empty scene of its own
+            Scene empty = SceneManager.CreateScene("ProjectileTests_" + System.Guid.NewGuid().ToString("N"));
+            SceneManager.SetActiveScene(empty);
+            for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                Scene other = SceneManager.GetSceneAt(i);
+                if (other != empty && other.isLoaded) yield return SceneManager.UnloadSceneAsync(other);
+            }
+            yield return new WaitForFixedUpdate(); // let physics drop the unloaded colliders
         }
 
         [TearDown]

@@ -195,7 +195,8 @@ namespace DungeonCrawler.Tests
 
             // the controller complains that it has no input asset. movement isn't under test here
             LogAssert.Expect(LogType.Error, new Regex("PlayerController needs the InputSystem_Actions"));
-            go.AddComponent<PlayerController>(); // adds PlayerMelee itself
+            go.AddComponent<PlayerController>(); // adds PlayerMelee and PlayerSword itself
+            go.GetComponent<PlayerSword>().Equip(); // these tests are about swinging, so start armed
 
             spawned.Add(go);
             return go.GetComponent<PlayerMelee>();

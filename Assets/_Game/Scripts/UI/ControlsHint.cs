@@ -25,7 +25,7 @@ namespace DungeonCrawler.UI
         private static readonly (string key, string action)[] Controls =
         {
             ("WASD", "Move"),
-            ("RIGHT CLICK / SPACE", "Attack"),
+            ("RIGHT CLICK / SPACE", "Attack (needs the sword)"),
             ("I / TAB", "Inventory"),
             ("ESC", "Pause"),
         };
@@ -69,7 +69,7 @@ namespace DungeonCrawler.UI
             Stretch(capText.rectTransform);
 
             var label = NewText(parent, action, 18f, LabelText, TextAlignmentOptions.Left);
-            Place(label.rectTransform, new Vector2(keyWidth + 12f, y), new Vector2(220f, RowHeight));
+            Place(label.rectTransform, new Vector2(keyWidth + 12f, y), new Vector2(320f, RowHeight));
         }
 
         private void AddInventoryButton(RectTransform parent, float y)

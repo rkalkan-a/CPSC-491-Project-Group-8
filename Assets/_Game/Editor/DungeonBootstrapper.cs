@@ -32,6 +32,22 @@ namespace DungeonCrawler.EditorTools
         private const string DungeonMapPath = "Assets/_Game/Art/Maps/dungeon_room_01.png";
         private const string DungeonCollidersPath = "Assets/_Game/Art/Maps/dungeon_room_01_colliders.json";
         private const float DungeonPixelsPerUnit = 64f; // 1536px room -> 24 units wide, fits on screen in one go
+        private const string Level3MapPath = "Assets/_Game/Art/Maps/dungeon_level_03.png";
+        private const string Level3CollidersPath = "Assets/_Game/Art/Maps/dungeon_level_03_colliders.json";
+        private const float Level3PixelsPerUnit = 44f; // 1536px -> about 35 units wide. the narrowest paths still fit the player
+        // open spots spread through level 3, all checked reachable from the entrance. image pixels
+        private static readonly Vector2[] Level3EnemySpawns =
+        {
+            new Vector2(330f, 262f),   // top left courtyard
+            new Vector2(620f, 412f),   // left corridor
+            new Vector2(760f, 470f),   // centre plaza
+            new Vector2(855f, 300f),   // below the exit stairs
+            new Vector2(1250f, 320f),  // camp
+            new Vector2(1285f, 600f),  // right side, by the rug
+            new Vector2(540f, 615f),   // bottom left torch room
+            new Vector2(1040f, 698f),  // walkway right of the entrance
+            new Vector2(300f, 515f),   // landing below the left stairs
+        };
         private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
         // room layout in world units, camera fits the room on its own
@@ -47,15 +63,17 @@ namespace DungeonCrawler.EditorTools
         private static readonly Color SpikeColor = new Color(0.62f, 0.62f, 0.68f);
         private static readonly Color HeartColor = new Color(0.9f, 0.15f, 0.2f);
 
-        [MenuItem("Tools/Dungeon/Build Starter Level", priority = 0)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Build Starter Level (erases Level_01)", priority = 0)]
         public static void BuildStarterLevel()
         {
             if (File.Exists(ScenePath))
             {
+                // you only need this to start a brand new project. to play the game use Tools > Dungeon > Play Game
                 bool overwrite = EditorUtility.DisplayDialog(
-                    "Level_01 already exists",
-                    "Level_01.unity already exists. Overwrite it? (scripts and prefabs aren't touched)",
-                    "Overwrite", "Cancel");
+                    "Erase the whole level?",
+                    "This deletes everything in Level_01 (the dungeon rooms, level 3, every enemy, the chests and doors) " +
+                    "and replaces it with a bare starter level.\n\nTo just play the game, cancel and use Tools > Dungeon > Play Game.",
+                    "Erase and rebuild", "Keep my level");
                 if (!overwrite) return;
             }
 
@@ -192,7 +210,7 @@ namespace DungeonCrawler.EditorTools
         // swaps the grey placeholder Room_01 in the open scene for the painted dungeon room.
         // everything else in the scene (menus, audio, hud, the other rooms) is left as it is,
         // unlike Build Starter Level which rebuilds the whole scene from scratch
-        [MenuItem("Tools/Dungeon/Replace Room_01 With Dungeon Room", priority = 2)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Replace Room_01 With Dungeon Room", priority = 2)]
         public static void ReplaceRoom01WithDungeonRoom()
         {
             Room old = null;
@@ -253,7 +271,59 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Room_01 replaced with Dungeon_01. Save the scene (Cmd+S).");
         }
 
-        [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
+        // level 3 (the ruins with the camp and the waterfall) comes right after Dungeon_01: its top door leads
+        // in through the bottom gate. replaces the old maze or the grey Room_02 if either is still there.
+        // chain mail sits in a glowing chest by the exit, leather stays in Dungeon_01's chest
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Put Level 3 After Dungeon_01", priority = 2)]
+        public static void PutLevel3AfterDungeon()
+        {
+            Room dungeon = null;
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+            {
+                if (r.name == "Level_03") { Debug.LogWarning("Level_03 is already in this scene."); return; }
+                if (r.name == "Dungeon_01") dungeon = r;
+            }
+            if (dungeon == null) { Debug.LogWarning("No Dungeon_01 in the open scene to attach level 3 to."); return; }
+            var sprite = LoadMapSprite(Level3MapPath, Level3PixelsPerUnit);
+            if (sprite == null) { Debug.LogWarning("No level 3 map at " + Level3MapPath); return; }
+
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+                if (r.name == "Maze_03" || r.name == "Room_02") Object.DestroyImmediate(r.gameObject);
+
+            // to the left of Dungeon_01, where the maze used to be
+            float w = sprite.bounds.size.x;
+            Vector2 center = new Vector2(dungeon.Center.x - dungeon.Size.x * 0.5f - RoomGap - w * 0.5f, dungeon.Center.y);
+            Room level = BuildMapRoom(dungeon.transform.parent, "Level_03", Level3MapPath, Level3CollidersPath, Level3PixelsPerUnit, center, false);
+
+            // bottom gate is the way in, arriving a couple of units up the path. the top gate is the exit (no level 4 yet)
+            Door entrance = AddMapDoor(level, DoorSide.South, Level3PixelsPerUnit, 850f, 835f, new Vector2(1.6f, 1.0f), 2.2f);
+            Door north = FindDoor(dungeon, DoorSide.North);
+            entrance.Link(north);
+            EditorUtility.SetDirty(entrance);
+            EditorUtility.SetDirty(north);
+            AddMapDoor(level, DoorSide.North, Level3PixelsPerUnit, 835f, 70f, new Vector2(1.4f, 1.0f), 2.2f);
+
+            foreach (var p in Level3EnemySpawns)
+                AddEnemySpawn(level, MapPixelToWorld(level, Level3PixelsPerUnit, p.x, p.y));
+
+            // on the landing right of the exit stairs
+            Chest chest = MakeChest(level.transform, MapPixelToWorld(level, Level3PixelsPerUnit, 945f, 160f), null);
+            if (chest != null)
+            {
+                chest.name = "Chest_ChainMail";
+                var cso = new SerializedObject(chest);
+                cso.FindProperty("containsSword").boolValue = false;
+                cso.FindProperty("armor").enumValueIndex = (int)ArmorTier.ChainMail;
+                cso.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            level.RefreshChildren();
+            EnemyBuilder.SetupEnemiesInScene();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("Level_03 added after Dungeon_01. Save the scene (Cmd+S).");
+        }
+
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Update Player Prefab", priority = 3)]
         public static void UpdatePlayerPrefab()
         {
             Sprite square = EnsureSquareSprite();
@@ -263,7 +333,7 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Player prefab updated");
         }
 
-        [MenuItem("Tools/Dungeon/Add Room To Scene", priority = 1)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Room To Scene", priority = 1)]
         public static void AddRoomToScene()
         {
             Sprite square = EnsureSquareSprite();
@@ -289,10 +359,10 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Added " + name + ". Use Add Door To Selected Room, then drag doors into each other's Target Door field to link them.");
         }
 
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/North", priority = 10)] public static void AddDoorNorth() => AddDoorToSelected(DoorSide.North);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/South", priority = 11)] public static void AddDoorSouth() => AddDoorToSelected(DoorSide.South);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/East", priority = 12)] public static void AddDoorEast() => AddDoorToSelected(DoorSide.East);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/West", priority = 13)] public static void AddDoorWest() => AddDoorToSelected(DoorSide.West);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/North", priority = 10)] public static void AddDoorNorth() => AddDoorToSelected(DoorSide.North);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/South", priority = 11)] public static void AddDoorSouth() => AddDoorToSelected(DoorSide.South);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/East", priority = 12)] public static void AddDoorEast() => AddDoorToSelected(DoorSide.East);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/West", priority = 13)] public static void AddDoorWest() => AddDoorToSelected(DoorSide.West);
 
         private static void AddDoorToSelected(DoorSide side)
         {
@@ -308,6 +378,13 @@ namespace DungeonCrawler.EditorTools
                 return;
             }
 
+            Door door = AddDoor(room, side);
+            Selection.activeObject = door.gameObject;
+        }
+
+        // opens a gap in one wall of a grey room and puts a door in it
+        private static Door AddDoor(Room room, DoorSide side)
+        {
             Sprite square = EnsureSquareSprite();
             // rebuild that wall with a gap then add the door
             Transform wallsRoot = room.transform.Find("Walls");
@@ -327,7 +404,7 @@ namespace DungeonCrawler.EditorTools
             Undo.RegisterCreatedObjectUndo(door.gameObject, "Add Door");
             room.RefreshChildren();
             EditorSceneManager.MarkSceneDirty(room.gameObject.scene);
-            Selection.activeObject = door.gameObject;
+            return door;
         }
 
         private static Room BuildRoom(Transform parent, string name, Vector2 center, Vector2 size, Sprite square, DoorSide[] doorSides)
@@ -568,16 +645,16 @@ namespace DungeonCrawler.EditorTools
             return spawn;
         }
 
-        private static void MakeChest(Transform parent, Vector2 position, Sprite square)
+        private static Chest MakeChest(Transform parent, Vector2 position, Sprite square)
         {
             const string closedPath = "Assets/_Game/Art/Chests/chest_closed.png";
             const string openPath = "Assets/_Game/Art/Chests/chest_open.png";
-            if (!File.Exists(closedPath)) { Debug.LogWarning("no chest art at " + closedPath); return; }
+            if (!File.Exists(closedPath)) { Debug.LogWarning("no chest art at " + closedPath); return null; }
             ImportAsPixelSprite(closedPath, 48f);
             ImportAsPixelSprite(openPath, 48f);
             var closed = AssetDatabase.LoadAssetAtPath<Sprite>(closedPath);
             var open = AssetDatabase.LoadAssetAtPath<Sprite>(openPath);
-            if (closed == null) { Debug.LogWarning("chest sprite didn't import, click into unity and run the build again"); return; }
+            if (closed == null) { Debug.LogWarning("chest sprite didn't import, click into unity and run the build again"); return null; }
 
             var go = new GameObject("Chest");
             go.transform.SetParent(parent, false);
@@ -600,6 +677,7 @@ namespace DungeonCrawler.EditorTools
 
             // glow + sparkles are built at runtime by ChestGlow
             go.AddComponent<ChestGlow>();
+            return chest;
         }
 
         private static void BuildChestPanel(Transform canvas)
@@ -808,7 +886,7 @@ namespace DungeonCrawler.EditorTools
                 || importer.mipmapEnabled
                 || importer.textureCompression != TextureImporterCompression.Uncompressed
                 || !importer.alphaIsTransparency
-                || importer.maxTextureSize < 2048;
+                || importer.maxTextureSize < GameArtImporter.MaxSizeFor(importer);
             if (!dirty) return;
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
@@ -817,7 +895,7 @@ namespace DungeonCrawler.EditorTools
             importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.alphaIsTransparency = true;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = GameArtImporter.MaxSizeFor(importer);
             importer.SaveAndReimport();
         }
 

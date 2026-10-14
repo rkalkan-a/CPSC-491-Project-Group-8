@@ -6,6 +6,9 @@ namespace DungeonCrawler.Combat
 {
     public class Health : MonoBehaviour
     {
+        // a heart on the hud is worth this much health, so 1 damage is a quarter of a heart
+        public const int HpPerHeart = 4;
+
         [SerializeField, Min(1)] private int maxHealth = 6;
         [SerializeField, Min(0f)] private float invulnerabilityTime = 0f; // i-frames after getting hit
 

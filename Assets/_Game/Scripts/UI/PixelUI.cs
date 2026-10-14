@@ -150,5 +150,102 @@ namespace DungeonCrawler.UI
             tex.Apply();
             return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), pixelsPerUnit);
         }
+
+        // 9x22 pixel sword pointing up. o = outline, L/M/D = light/mid/dark steel, G/g = gold, b = grip
+        private static readonly string[] SwordPixels =
+        {
+            "....o....",
+            "...oLo...",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "..oLMDo..",
+            "ooooooooo",
+            "ogGGGGGgo",
+            "ooooooooo",
+            "...obo...",
+            "...obo...",
+            "...obo...",
+            "..ogGgo..",
+            "...ooo...",
+        };
+
+        // the pivot sits on the grip, so rotating the sprite swings the blade around the hand
+        public static Sprite Sword(float pixelsPerUnit = 38f)
+        {
+            int w = SwordPixels[0].Length, h = SwordPixels.Length;
+            var tex = NewTexture(w, h, true);
+            for (int row = 0; row < h; row++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    Color c = SwordPixels[row][x] switch
+                    {
+                        'o' => new Color(0.1f, 0.08f, 0.1f),
+                        'L' => new Color(0.92f, 0.94f, 0.98f),
+                        'M' => new Color(0.72f, 0.76f, 0.82f),
+                        'D' => new Color(0.5f, 0.54f, 0.62f),
+                        'G' => new Color(0.95f, 0.75f, 0.3f),
+                        'g' => new Color(0.7f, 0.5f, 0.2f),
+                        'b' => new Color(0.45f, 0.28f, 0.18f),
+                        _ => Color.clear,
+                    };
+                    tex.SetPixel(x, h - 1 - row, c); // texture rows go bottom up
+                }
+            }
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 3.5f / h), pixelsPerUnit);
+        }
+
+        // 11x11 pixel leather chestplate, used for the armor pickup and its inventory slot.
+        // o = outline, B = leather, T = tan trim, D = dark leather, S = buckle
+        private static readonly string[] ArmorPixels =
+        {
+            ".oo.....oo.",
+            "oTToooooTTo",
+            "oBBTBBBTBBo",
+            "oBBBTBTBBBo",
+            ".oBBBTBBBo.",
+            ".oBBSBSBBo.",
+            ".oBBBBBBBo.",
+            ".oTTTTTTTo.",
+            ".oBBDBDBBo.",
+            "..oBBDBBo..",
+            "...ooooo...",
+        };
+
+        // leather is brown, chain mail is grey steel. tier: 1 = leather, 2 = chain mail
+        public static Sprite ArmorIcon(Player.ArmorTier tier = Player.ArmorTier.Leather, float pixelsPerUnit = 26f)
+        {
+            int w = ArmorPixels[0].Length, h = ArmorPixels.Length;
+            var tex = NewTexture(w, h, true);
+            for (int row = 0; row < h; row++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool chain = tier == Player.ArmorTier.ChainMail;
+                    Color c = ArmorPixels[row][x] switch
+                    {
+                        'o' => new Color(0.1f, 0.06f, 0.05f),
+                        'B' => chain ? new Color(0.55f, 0.57f, 0.6f) : new Color(0.46f, 0.28f, 0.17f),
+                        'T' => chain ? new Color(0.78f, 0.8f, 0.84f) : new Color(0.8f, 0.58f, 0.32f),
+                        'D' => chain ? new Color(0.36f, 0.37f, 0.4f) : new Color(0.3f, 0.18f, 0.11f),
+                        'S' => new Color(0.76f, 0.76f, 0.8f),
+                        _ => Color.clear,
+                    };
+                    tex.SetPixel(x, h - 1 - row, c); // texture rows go bottom up
+                }
+            }
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+        }
     }
 }

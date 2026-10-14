@@ -9,7 +9,8 @@ using DungeonCrawler.Enemies;
 namespace DungeonCrawler.Player
 {
     // close range swing. hits everything with Health inside an arc in front of the player.
-    // right mouse button, space, or gamepad north. aims at the mouse, or the way you're facing
+    // right mouse button, space, or gamepad north. swings the way the character is facing.
+    // does nothing until the player is armed (PlayerSword arms it once the sword is picked up)
     [RequireComponent(typeof(PlayerController))]
     public class PlayerMelee : MonoBehaviour
     {
@@ -25,12 +26,12 @@ namespace DungeonCrawler.Player
         public float ArcDegrees => arcDegrees;
         public float Cooldown => cooldown;
         public bool IsOnCooldown => Time.time < cooldownUntil;
+        public bool Armed { get; set; } = true;
         public event Action<Vector2> Swung; // direction of the swing
 
         private const float SlashTime = 0.12f;
 
         private PlayerController player;
-        private PlayerAttack rangedAttack;
         private Health ownHealth;
         private InputAction swingAction;
         private float cooldownUntil;
@@ -40,7 +41,6 @@ namespace DungeonCrawler.Player
         private void Awake()
         {
             player = GetComponent<PlayerController>();
-            rangedAttack = GetComponent<PlayerAttack>();
             ownHealth = GetComponent<Health>();
 
             // bound in code so the shared input actions asset doesn't need editing
@@ -58,28 +58,22 @@ namespace DungeonCrawler.Player
         {
             if (!player.InputEnabled || PauseMenu.IsPaused) return;
             if (ownHealth != null && ownHealth.IsDead) return;
-            if (swingAction.WasPressedThisFrame()) TrySwing(AimDirection());
+            if (swingAction.WasPressedThisFrame()) TrySwing(FacingDirection());
         }
 
-        private Vector2 AimDirection()
+        // the way the character is facing, snapped to left/right/up/down the same way the sprite is
+        // (sideways wins on diagonals), so the attack always goes where the character is looking
+        public Vector2 FacingDirection()
         {
-            if (rangedAttack != null && rangedAttack.isActiveAndEnabled) return rangedAttack.AimDirection;
-
-            if (Mouse.current != null && Camera.main != null)
-            {
-                Vector2 mouseScreen = Mouse.current.position.ReadValue();
-                float depth = -Camera.main.transform.position.z;
-                Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(new Vector3(mouseScreen.x, mouseScreen.y, depth));
-                Vector2 toMouse = (Vector2)mouseWorld - (Vector2)transform.position;
-                if (toMouse.sqrMagnitude > 0.01f) return toMouse.normalized;
-            }
-            return player.Facing;
+            Vector2 facing = player.MoveInput.sqrMagnitude > 0.01f ? player.MoveInput : player.Facing;
+            if (Mathf.Abs(facing.x) >= Mathf.Abs(facing.y)) return facing.x < 0f ? Vector2.left : Vector2.right;
+            return facing.y > 0f ? Vector2.up : Vector2.down;
         }
 
-        // swings if the cooldown is over. returns false if it was still cooling down
+        // swings if the player is armed and the cooldown is over. returns false if nothing happened
         public bool TrySwing(Vector2 direction)
         {
-            if (IsOnCooldown) return false;
+            if (!Armed || IsOnCooldown) return false;
             if (direction.sqrMagnitude < 0.0001f) direction = player.Facing;
             direction.Normalize();
 

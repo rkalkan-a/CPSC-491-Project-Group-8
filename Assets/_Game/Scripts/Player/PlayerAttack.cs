@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using DungeonCrawler.Combat;
+using DungeonCrawler.Loot;
 
 namespace DungeonCrawler.Player
 {
@@ -26,6 +27,7 @@ namespace DungeonCrawler.Player
         public float Range => range;
 
         private PlayerController player;
+        private LootGrabber grabber;
         private InputActionMap playerMap;
         private InputAction attackAction;
         private InputAction lookAction;
@@ -58,6 +60,10 @@ namespace DungeonCrawler.Player
 
             if (attackAction != null && attackAction.IsPressed() && Time.time >= cooldownUntil)
             {
+                // clicking on loot grabs it instead of shooting
+                if (grabber == null) grabber = GetComponent<LootGrabber>(); // added by PlayerController, which may wake up after this
+                if (grabber != null && (grabber.HoldingLootClick || grabber.PointerOnLoot)) return;
+
                 Fire();
                 cooldownUntil = Time.time + 1f / attacksPerSecond;
             }

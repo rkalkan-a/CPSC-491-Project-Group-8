@@ -7,7 +7,7 @@ namespace DungeonCrawler.Combat
     [RequireComponent(typeof(Collider2D))]
     public class HealthPickup : MonoBehaviour
     {
-        [SerializeField, Min(1)] private int healAmount = 2;
+        [SerializeField, Min(1)] private int healAmount = Health.HpPerHeart; // one full heart
         [SerializeField] private bool onlyIfHurt = true;
 
         private void Reset()
@@ -18,14 +18,19 @@ namespace DungeonCrawler.Combat
         private void OnTriggerEnter2D(Collider2D other)
         {
             var player = other.GetComponentInParent<PlayerController>();
-            if (player == null) return;
+            if (player != null) Grab(player);
+        }
 
-            var health = player.GetComponent<Health>();
-            if (health == null || health.IsDead) return;
-            if (onlyIfHurt && health.Current >= health.Max) return;
+        // walking over it, clicking it, or pressing E next to it all end up here
+        public bool Grab(PlayerController player)
+        {
+            var health = player != null ? player.GetComponent<Health>() : null;
+            if (health == null || health.IsDead) return false;
+            if (onlyIfHurt && health.Current >= health.Max) return false;
 
             health.Heal(healAmount);
             Destroy(gameObject);
+            return true;
         }
 
         private void OnDrawGizmos()
