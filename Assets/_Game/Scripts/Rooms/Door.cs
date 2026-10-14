@@ -56,20 +56,12 @@ namespace DungeonCrawler.Rooms
         private void UpdateDoorColor()
         {
             if (doorRenderer == null)
-                doorRenderer = GetComponentInChildren<SpriteRenderer>(true);
+                doorRenderer = GetComponent<SpriteRenderer>();
 
             if (doorRenderer == null)
-            {
-                Debug.LogWarning($"No SpriteRenderer found for door {name}", this);
                 return;
-            }
 
-            if (isLocked)
-                doorRenderer.color = Color.red;
-            else if (targetDoor != null)
-                doorRenderer.color = Color.green;
-            else
-                doorRenderer.color = Color.yellow;
+            doorRenderer.color = GetExpectedColor();
         }
 
         private void Awake()
@@ -138,7 +130,7 @@ namespace DungeonCrawler.Rooms
             UpdateDoorColor();
         }
 
-        private void Start()
+        private void OnEnable()
         {
             UpdateDoorColor();
         }
@@ -177,6 +169,27 @@ namespace DungeonCrawler.Rooms
                     targetDoor.transform.position
                 );
             }
+        }
+        private Color GetExpectedColor()
+        {
+            if (isLocked)
+                return Color.red;
+
+            if (targetDoor != null)
+                return Color.green;
+
+            return Color.yellow;
+        }
+
+        private void LateUpdate()
+        {
+            if (doorRenderer == null)
+                return;
+
+            Color expected = GetExpectedColor();
+
+            if (doorRenderer.color != expected)
+                doorRenderer.color = expected;
         }
     }
 }
