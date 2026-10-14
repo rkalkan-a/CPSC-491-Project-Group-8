@@ -11,7 +11,7 @@ namespace DungeonCrawler.EditorTools
     {
         private const string PlayerPrefabPath = "Assets/_Game/Prefabs/Player.prefab";
 
-        [MenuItem("Tools/Dungeon/Setup Player Attack", priority = 5)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Setup Player Attack", priority = 5)]
         public static void SetupPlayerAttack()
         {
             var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);

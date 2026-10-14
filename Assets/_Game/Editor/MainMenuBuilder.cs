@@ -24,12 +24,14 @@ namespace DungeonCrawler.EditorTools
         private static readonly Color TextColor = new Color(0.9f, 0.86f, 0.86f);
         private static readonly Color SliderTrack = new Color(0.16f, 0.12f, 0.14f);
 
-        [MenuItem("Tools/Dungeon/Build Main Menu", priority = 2)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Build Main Menu (erases MainMenu)", priority = 2)]
         public static void BuildMainMenu()
         {
             if (File.Exists(ScenePath))
             {
-                if (!EditorUtility.DisplayDialog("MainMenu already exists", "Overwrite MainMenu.unity?", "Overwrite", "Cancel"))
+                if (!EditorUtility.DisplayDialog("Erase the main menu?",
+                    "This deletes MainMenu.unity and builds a fresh one.\n\nTo just play the game, cancel and use Tools > Dungeon > Play Game.",
+                    "Erase and rebuild", "Keep it"))
                     return;
             }
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

@@ -15,7 +15,7 @@ namespace DungeonCrawler.EditorTools
         private const string SkeletonSpritePath = "Assets/_Game/Art/Enemies/Skeleton_Idle.png";
         private const string SlimeSpritePath = "Assets/_Game/Art/Enemies/Slime_Idle.png";
 
-        [MenuItem("Tools/Dungeon/Setup Enemies In Scene", priority = 4)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Setup Enemies In Scene", priority = 4)]
         public static void SetupEnemiesInScene()
         {
             // Ghoul = skeleton art (chaser), Crawler = slime art (wanderer) - real sprites from the

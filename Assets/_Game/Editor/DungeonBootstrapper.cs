@@ -63,15 +63,17 @@ namespace DungeonCrawler.EditorTools
         private static readonly Color SpikeColor = new Color(0.62f, 0.62f, 0.68f);
         private static readonly Color HeartColor = new Color(0.9f, 0.15f, 0.2f);
 
-        [MenuItem("Tools/Dungeon/Build Starter Level", priority = 0)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Build Starter Level (erases Level_01)", priority = 0)]
         public static void BuildStarterLevel()
         {
             if (File.Exists(ScenePath))
             {
+                // you only need this to start a brand new project. to play the game use Tools > Dungeon > Play Game
                 bool overwrite = EditorUtility.DisplayDialog(
-                    "Level_01 already exists",
-                    "Level_01.unity already exists. Overwrite it? (scripts and prefabs aren't touched)",
-                    "Overwrite", "Cancel");
+                    "Erase the whole level?",
+                    "This deletes everything in Level_01 (the dungeon rooms, the maze, every enemy, the chests and doors) " +
+                    "and replaces it with a bare starter level.\n\nTo just play the game, cancel and use Tools > Dungeon > Play Game.",
+                    "Erase and rebuild", "Keep my level");
                 if (!overwrite) return;
             }
 
@@ -208,7 +210,7 @@ namespace DungeonCrawler.EditorTools
         // swaps the grey placeholder Room_01 in the open scene for the painted dungeon room.
         // everything else in the scene (menus, audio, hud, the other rooms) is left as it is,
         // unlike Build Starter Level which rebuilds the whole scene from scratch
-        [MenuItem("Tools/Dungeon/Replace Room_01 With Dungeon Room", priority = 2)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Replace Room_01 With Dungeon Room", priority = 2)]
         public static void ReplaceRoom01WithDungeonRoom()
         {
             Room old = null;
@@ -271,7 +273,7 @@ namespace DungeonCrawler.EditorTools
 
         // adds the third level, the big maze, to the left of Room_02. a new west door in Room_02 leads into
         // the maze's bottom entrance. enemies here drop chain mail. leaves the rest of the scene alone
-        [MenuItem("Tools/Dungeon/Add Maze Level After Room_02", priority = 2)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Maze Level After Room_02", priority = 2)]
         public static void AddMazeLevel()
         {
             Room room2 = null;
@@ -310,7 +312,7 @@ namespace DungeonCrawler.EditorTools
 
         // the maze becomes the level right after Dungeon_01 (its top door leads straight in) and the placeholder
         // Room_02 goes away. leather armor moves out of enemy drops into a glowing chest in Dungeon_01's top left corner
-        [MenuItem("Tools/Dungeon/Put Maze After Dungeon_01 (Leather Chest)", priority = 2)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Put Maze After Dungeon_01 (Leather Chest)", priority = 2)]
         public static void PutMazeAfterDungeon()
         {
             Room dungeon = null, room2 = null, maze = null;
@@ -360,7 +362,7 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Maze_03 now follows Dungeon_01, leather armor is in a chest. Save the scene (Cmd+S).");
         }
 
-        [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Update Player Prefab", priority = 3)]
         public static void UpdatePlayerPrefab()
         {
             Sprite square = EnsureSquareSprite();
@@ -370,7 +372,7 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Player prefab updated");
         }
 
-        [MenuItem("Tools/Dungeon/Add Room To Scene", priority = 1)]
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Room To Scene", priority = 1)]
         public static void AddRoomToScene()
         {
             Sprite square = EnsureSquareSprite();
@@ -396,10 +398,10 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Added " + name + ". Use Add Door To Selected Room, then drag doors into each other's Target Door field to link them.");
         }
 
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/North", priority = 10)] public static void AddDoorNorth() => AddDoorToSelected(DoorSide.North);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/South", priority = 11)] public static void AddDoorSouth() => AddDoorToSelected(DoorSide.South);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/East", priority = 12)] public static void AddDoorEast() => AddDoorToSelected(DoorSide.East);
-        [MenuItem("Tools/Dungeon/Add Door To Selected Room/West", priority = 13)] public static void AddDoorWest() => AddDoorToSelected(DoorSide.West);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/North", priority = 10)] public static void AddDoorNorth() => AddDoorToSelected(DoorSide.North);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/South", priority = 11)] public static void AddDoorSouth() => AddDoorToSelected(DoorSide.South);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/East", priority = 12)] public static void AddDoorEast() => AddDoorToSelected(DoorSide.East);
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Door To Selected Room/West", priority = 13)] public static void AddDoorWest() => AddDoorToSelected(DoorSide.West);
 
         private static void AddDoorToSelected(DoorSide side)
         {
