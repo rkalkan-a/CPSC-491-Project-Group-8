@@ -152,10 +152,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
+  doorRenderer: {fileID: 7496385630500130504}
   side: 2
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
+  requireWalkIn: 0
+  walkInDepth: 0.2
 --- !u!1 &2179829425295807019
 GameObject:
   m_ObjectHideFlags: 0
@@ -308,10 +311,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
+  doorRenderer: {fileID: 8041495917075108924}
   side: 3
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
+  requireWalkIn: 0
+  walkInDepth: 0.2
 --- !u!1 &2290675104340154646
 GameObject:
   m_ObjectHideFlags: 0
@@ -603,10 +609,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
+  doorRenderer: {fileID: 3926077042951117875}
   side: 0
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
+  requireWalkIn: 0
+  walkInDepth: 0.2
 --- !u!1 &5264378300363349024
 GameObject:
   m_ObjectHideFlags: 0
@@ -1232,10 +1241,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9635aa4050f8b45d9ba9dab1c0d981df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Rooms.Door
+  doorRenderer: {fileID: 698868973638374042}
   side: 1
   targetDoor: {fileID: 0}
   arrivalDistance: 1.5
   isLocked: 0
+  requireWalkIn: 0
+  walkInDepth: 0.2
 --- !u!1 &8554968450952135402
 GameObject:
   m_ObjectHideFlags: 0
