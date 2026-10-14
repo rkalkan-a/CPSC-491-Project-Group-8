@@ -21,15 +21,36 @@ namespace DungeonCrawler.Player
         [SerializeField] private Sprite armoredRight;
         [SerializeField] private Sprite[] armoredWalkSide;
 
-        // switches every sprite over to the armored set. PlayerArmor turns this on
-        public bool Armored { get; set; }
+        [Header("Chain mail")]
+        [SerializeField] private Sprite chainFront;
+        [SerializeField] private Sprite chainBack;
+        [SerializeField] private Sprite chainLeft;
+        [SerializeField] private Sprite chainRight;
+        [SerializeField] private Sprite[] chainWalkSide;
+
+        // which armor the sprites show. PlayerArmor sets this when armor is put on
+        public ArmorTier Tier { get; set; } = ArmorTier.None;
 
         // what the character looks like from the front right now, for the inventory portrait
-        public Sprite FrontSprite => Pick(front, armoredFront);
+        public Sprite FrontSprite => Pick(front, armoredFront, chainFront);
 
-        // the armored version when armor is on and that sprite exists, otherwise the normal one
-        private Sprite Pick(Sprite normal, Sprite armored) => Armored && armored != null ? armored : normal;
-        private Sprite[] WalkFrames => Armored && armoredWalkSide != null && armoredWalkSide.Length > 0 ? armoredWalkSide : walkSide;
+        // the sprite for the armor being worn, falling back to a lower tier (then no armor) if a sprite is missing
+        private Sprite Pick(Sprite normal, Sprite leather, Sprite chain)
+        {
+            if (Tier >= ArmorTier.ChainMail && chain != null) return chain;
+            if (Tier >= ArmorTier.Leather && leather != null) return leather;
+            return normal;
+        }
+
+        private Sprite[] WalkFrames
+        {
+            get
+            {
+                if (Tier >= ArmorTier.ChainMail && chainWalkSide != null && chainWalkSide.Length > 0) return chainWalkSide;
+                if (Tier >= ArmorTier.Leather && armoredWalkSide != null && armoredWalkSide.Length > 0) return armoredWalkSide;
+                return walkSide;
+            }
+        }
 
         [SerializeField, Min(0f)] private float bobAmount = 0.05f;
         [SerializeField, Min(0f)] private float bobSpeed = 12f;
@@ -65,9 +86,9 @@ namespace DungeonCrawler.Player
                 flip = dir.x > 0f;
             }
             else if (side)
-                pick = dir.x < 0f ? Pick(left, armoredLeft) : Pick(right, armoredRight);
+                pick = dir.x < 0f ? Pick(left, armoredLeft, chainLeft) : Pick(right, armoredRight, chainRight);
             else
-                pick = dir.y > 0f ? Pick(back, armoredBack) : Pick(front, armoredFront);
+                pick = dir.y > 0f ? Pick(back, armoredBack, chainBack) : Pick(front, armoredFront, chainFront);
 
             if (pick != null && target.sprite != pick) target.sprite = pick;
             target.flipX = flip;

@@ -123,7 +123,13 @@ namespace DungeonCrawler.UI
             var armor = player != null ? player.GetComponent<PlayerArmor>() : null;
             bool armored = armor != null && armor.HasArmor;
             armorIcon.SetActive(armored);
-            armorText.text = armored ? "Leather Armor\n+1 heart" : "No armor";
+            if (armored)
+            {
+                int hearts = armor.ExtraHearts;
+                armorText.text = $"{PlayerArmor.NameOf(armor.Tier)}\n+{hearts} heart{(hearts == 1 ? "" : "s")}";
+                armorIcon.GetComponent<Image>().sprite = PixelUI.ArmorIcon(armor.Tier);
+            }
+            else armorText.text = PlayerArmor.NameOf(ArmorTier.None);
 
             var look = player != null ? player.GetComponent<PlayerSpriteDirection>() : null;
             portrait.sprite = look != null ? look.FrontSprite : null;

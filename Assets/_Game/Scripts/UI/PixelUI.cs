@@ -222,7 +222,8 @@ namespace DungeonCrawler.UI
             "...ooooo...",
         };
 
-        public static Sprite ArmorIcon(float pixelsPerUnit = 26f)
+        // leather is brown, chain mail is grey steel. tier: 1 = leather, 2 = chain mail
+        public static Sprite ArmorIcon(Player.ArmorTier tier = Player.ArmorTier.Leather, float pixelsPerUnit = 26f)
         {
             int w = ArmorPixels[0].Length, h = ArmorPixels.Length;
             var tex = NewTexture(w, h, true);
@@ -230,12 +231,13 @@ namespace DungeonCrawler.UI
             {
                 for (int x = 0; x < w; x++)
                 {
+                    bool chain = tier == Player.ArmorTier.ChainMail;
                     Color c = ArmorPixels[row][x] switch
                     {
                         'o' => new Color(0.1f, 0.06f, 0.05f),
-                        'B' => new Color(0.46f, 0.28f, 0.17f),
-                        'T' => new Color(0.8f, 0.58f, 0.32f),
-                        'D' => new Color(0.3f, 0.18f, 0.11f),
+                        'B' => chain ? new Color(0.55f, 0.57f, 0.6f) : new Color(0.46f, 0.28f, 0.17f),
+                        'T' => chain ? new Color(0.78f, 0.8f, 0.84f) : new Color(0.8f, 0.58f, 0.32f),
+                        'D' => chain ? new Color(0.36f, 0.37f, 0.4f) : new Color(0.3f, 0.18f, 0.11f),
                         'S' => new Color(0.76f, 0.76f, 0.8f),
                         _ => Color.clear,
                     };

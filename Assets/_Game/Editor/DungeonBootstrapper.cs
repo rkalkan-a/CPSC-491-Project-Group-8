@@ -32,6 +32,22 @@ namespace DungeonCrawler.EditorTools
         private const string DungeonMapPath = "Assets/_Game/Art/Maps/dungeon_room_01.png";
         private const string DungeonCollidersPath = "Assets/_Game/Art/Maps/dungeon_room_01_colliders.json";
         private const float DungeonPixelsPerUnit = 64f; // 1536px room -> 24 units wide, fits on screen in one go
+        private const string MazeMapPath = "Assets/_Game/Art/Maps/dungeon_maze_03.png";
+        private const string MazeCollidersPath = "Assets/_Game/Art/Maps/dungeon_maze_03_colliders.json";
+        private const float MazePixelsPerUnit = 20f; // 1536px maze -> about 77 units wide, so the corridors fit the player
+        // roomy spots spread through the maze, picked from its walkable area. image pixels
+        private static readonly Vector2[] MazeEnemySpawns =
+        {
+            new Vector2(1301f, 650f),
+            new Vector2(282f, 771f),
+            new Vector2(205f, 481f),
+            new Vector2(1048f, 855f),
+            new Vector2(733f, 157f),
+            new Vector2(1046f, 520f),
+            new Vector2(548f, 652f),
+            new Vector2(222f, 306f),
+            new Vector2(402f, 371f),
+        };
         private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
         // room layout in world units, camera fits the room on its own
@@ -253,6 +269,45 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Room_01 replaced with Dungeon_01. Save the scene (Cmd+S).");
         }
 
+        // adds the third level, the big maze, to the left of Room_02. a new west door in Room_02 leads into
+        // the maze's bottom entrance. enemies here drop chain mail. leaves the rest of the scene alone
+        [MenuItem("Tools/Dungeon/Add Maze Level After Room_02", priority = 2)]
+        public static void AddMazeLevel()
+        {
+            Room room2 = null;
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+            {
+                if (r.name == "Maze_03") { Debug.LogWarning("The maze is already in this scene."); return; }
+                if (r.name == "Room_02") room2 = r;
+            }
+            if (room2 == null) { Debug.LogWarning("No Room_02 in the open scene to attach the maze to."); return; }
+            var sprite = LoadMapSprite(MazeMapPath, MazePixelsPerUnit);
+            if (sprite == null) { Debug.LogWarning("No maze map at " + MazeMapPath); return; }
+
+            Door west = FindDoor(room2, DoorSide.West) ?? AddDoor(room2, DoorSide.West);
+
+            float mazeW = sprite.texture.width / MazePixelsPerUnit;
+            Vector2 center = new Vector2(room2.Center.x - room2.Size.x * 0.5f - RoomGap - mazeW * 0.5f, room2.Center.y);
+            Room maze = BuildMapRoom(room2.transform.parent, "Maze_03", MazeMapPath, MazeCollidersPath, MazePixelsPerUnit, center, false);
+
+            // bottom archway. arriving puts the player a couple of units inside the first room
+            Door entrance = AddMapDoor(maze, DoorSide.South, MazePixelsPerUnit, 725f, 880f, new Vector2(1.6f, 1.2f), 2f);
+            entrance.Link(west);
+            EditorUtility.SetDirty(entrance);
+            EditorUtility.SetDirty(west);
+
+            foreach (var p in MazeEnemySpawns)
+                AddEnemySpawn(maze, MapPixelToWorld(maze, MazePixelsPerUnit, p.x, p.y));
+
+            var so = new SerializedObject(maze);
+            so.FindProperty("armorLoot").enumValueIndex = (int)ArmorTier.ChainMail;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            EnemyBuilder.SetupEnemiesInScene();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("Maze_03 added after Room_02. Save the scene (Cmd+S).");
+        }
+
         [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
         public static void UpdatePlayerPrefab()
         {
@@ -308,6 +363,13 @@ namespace DungeonCrawler.EditorTools
                 return;
             }
 
+            Door door = AddDoor(room, side);
+            Selection.activeObject = door.gameObject;
+        }
+
+        // opens a gap in one wall of a grey room and puts a door in it
+        private static Door AddDoor(Room room, DoorSide side)
+        {
             Sprite square = EnsureSquareSprite();
             // rebuild that wall with a gap then add the door
             Transform wallsRoot = room.transform.Find("Walls");
@@ -327,7 +389,7 @@ namespace DungeonCrawler.EditorTools
             Undo.RegisterCreatedObjectUndo(door.gameObject, "Add Door");
             room.RefreshChildren();
             EditorSceneManager.MarkSceneDirty(room.gameObject.scene);
-            Selection.activeObject = door.gameObject;
+            return door;
         }
 
         private static Room BuildRoom(Transform parent, string name, Vector2 center, Vector2 size, Sprite square, DoorSide[] doorSides)

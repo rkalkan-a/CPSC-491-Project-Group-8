@@ -191,6 +191,14 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 87e2cf4325ad495a9630236be1c3cb6f, type: 3}
   - {fileID: 21300000, guid: 47417e6b7c9b436ead8dcf34df587375, type: 3}
   - {fileID: 21300000, guid: 39861e9aeb1442419156212af3123770, type: 3}
+  chainFront: {fileID: 21300000, guid: b36d2ffa2a684aa0b1e55dfbe39a667f, type: 3}
+  chainBack: {fileID: 21300000, guid: 37459d34962d4c36b72cdf40e8d330cb, type: 3}
+  chainLeft: {fileID: 21300000, guid: 5c4b15af008048b98c4a5a0b01cb1d45, type: 3}
+  chainRight: {fileID: 21300000, guid: 8b9ef2f7697743228d3389ecde3625e0, type: 3}
+  chainWalkSide:
+  - {fileID: 21300000, guid: e561be4f1c914345b764f17d1ccc1ed0, type: 3}
+  - {fileID: 21300000, guid: 5951e473e8be48cd83fb646c7aea2f9b, type: 3}
+  - {fileID: 21300000, guid: 9fb60fc6bc0e407885670f9df3484145, type: 3}
   bobAmount: 0.05
   bobSpeed: 12
 --- !u!114 &5078144624677139617

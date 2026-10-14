@@ -7,8 +7,8 @@ using DungeonCrawler.UI;
 
 namespace DungeonCrawler.Loot
 {
-    // drops loot where an enemy dies: a heart some of the time, and leather armor the first time
-    // an enemy dies while the player isn't wearing any. every enemy gets this automatically
+    // drops loot where an enemy dies: a heart some of the time, and the room's armor (leather in the
+    // first dungeon, chain mail in the maze) the first time an enemy dies there while the player doesn't have it. every enemy gets this automatically
     [RequireComponent(typeof(Health))]
     public class LootDropper : MonoBehaviour
     {
@@ -21,7 +21,6 @@ namespace DungeonCrawler.Loot
         }
 
         private static Sprite heartSprite;
-        private static Sprite armorSprite;
         private Health health;
 
         private void Awake()
@@ -38,18 +37,22 @@ namespace DungeonCrawler.Loot
             TryDropArmor();
         }
 
-        // drops the armor if the player isn't wearing any yet and there isn't a set already lying around.
+        // drops this room's armor if it would be an upgrade for the player and there isn't a set already lying around.
         // returns the pickup, or null if nothing dropped
         public GameObject TryDropArmor()
         {
+            var enemy = GetComponent<Enemy>();
+            ArmorTier tier = enemy != null && enemy.Room != null ? enemy.Room.ArmorLoot : ArmorTier.Leather;
+            if (tier == ArmorTier.None) return null;
+
             var player = GameManager.Instance != null ? GameManager.Instance.Player : null;
             if (player == null) player = FindFirstObjectByType<PlayerController>();
             var armor = player != null ? player.GetComponent<PlayerArmor>() : null;
-            if (armor == null || armor.HasArmor) return null;
+            if (armor == null || armor.Tier >= tier) return null;
             if (FindFirstObjectByType<ArmorPickup>() != null) return null;
 
             // a little to the side so it doesn't land on top of a heart
-            return SpawnArmor((Vector2)transform.position + Vector2.right * 0.5f, RoomTransform());
+            return SpawnArmor((Vector2)transform.position + Vector2.right * 0.5f, RoomTransform(), tier);
         }
 
         // roll is 0..1. drops when the roll is under the drop chance, so a chance of 0 never drops and 1 always does.
@@ -89,23 +92,21 @@ namespace DungeonCrawler.Loot
             return go;
         }
 
-        public static GameObject SpawnArmor(Vector2 position, Transform parent)
+        public static GameObject SpawnArmor(Vector2 position, Transform parent, ArmorTier tier = ArmorTier.Leather)
         {
-            if (armorSprite == null) armorSprite = PixelUI.ArmorIcon();
-
             var go = new GameObject("ArmorPickup");
             go.transform.SetParent(parent, false);
             go.transform.position = position;
 
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = armorSprite;
+            sr.sprite = PixelUI.ArmorIcon(tier);
             sr.sortingOrder = 4;
 
             var col = go.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
             col.radius = 0.3f;
 
-            go.AddComponent<ArmorPickup>();
+            go.AddComponent<ArmorPickup>().Tier = tier;
             go.AddComponent<PickupBob>();
             return go;
         }

@@ -3,10 +3,14 @@ using DungeonCrawler.Player;
 
 namespace DungeonCrawler.Loot
 {
-    // leather armor on the floor. the player puts it on by walking over it
+    // armor on the floor. the player puts it on by walking over it, if it's better than what they're wearing
     [RequireComponent(typeof(Collider2D))]
     public class ArmorPickup : MonoBehaviour
     {
+        [SerializeField] private ArmorTier tier = ArmorTier.Leather;
+
+        public ArmorTier Tier { get => tier; set => tier = value; }
+
         private void Reset()
         {
             GetComponent<Collider2D>().isTrigger = true;
@@ -18,9 +22,8 @@ namespace DungeonCrawler.Loot
             if (player == null) return;
 
             var armor = player.GetComponent<PlayerArmor>();
-            if (armor == null || armor.HasArmor) return;
+            if (armor == null || !armor.Equip(tier)) return;
 
-            armor.Equip();
             Destroy(gameObject);
         }
     }

@@ -8,6 +8,7 @@ using DungeonCrawler.Combat;
 using DungeonCrawler.Enemies;
 using DungeonCrawler.Loot;
 using DungeonCrawler.Player;
+using DungeonCrawler.Rooms;
 
 namespace DungeonCrawler.Tests
 {
@@ -80,6 +81,79 @@ namespace DungeonCrawler.Tests
             Assert.AreEqual(maxAfterFirst, health.Max);
         }
 
+        // ---------- chain mail ----------
+
+        [UnityTest]
+        public IEnumerator ChainMail_ReplacesLeather_AndAddsOneMoreHeart()
+        {
+            var armor = SpawnPlayer();
+            var health = armor.GetComponent<Health>();
+            yield return null;
+            int baseMax = health.Max;
+
+            armor.Equip(ArmorTier.Leather);
+            Assert.IsTrue(armor.Equip(ArmorTier.ChainMail), "chain mail is an upgrade over leather");
+
+            Assert.AreEqual(ArmorTier.ChainMail, armor.Tier);
+            Assert.AreEqual(2, armor.ExtraHearts);
+            Assert.AreEqual(baseMax + 2 * Health.HpPerHeart, health.Max, "chain mail gives two hearts in total, not three");
+        }
+
+        [UnityTest]
+        public IEnumerator Leather_DoesNotReplaceChainMail()
+        {
+            var armor = SpawnPlayer();
+            var health = armor.GetComponent<Health>();
+            yield return null;
+
+            armor.Equip(ArmorTier.ChainMail);
+            int maxWithChain = health.Max;
+
+            Assert.IsFalse(armor.Equip(ArmorTier.Leather), "putting on worse armor should do nothing");
+            Assert.AreEqual(ArmorTier.ChainMail, armor.Tier);
+            Assert.AreEqual(maxWithChain, health.Max);
+        }
+
+        [UnityTest]
+        public IEnumerator ChainMailPickup_UpgradesThePlayer()
+        {
+            var armor = SpawnPlayer();
+            yield return new WaitForFixedUpdate();
+            armor.Equip(ArmorTier.Leather);
+
+            LootDropper.SpawnArmor(Vector2.zero, null, ArmorTier.ChainMail);
+            for (int i = 0; i < 5; i++) yield return new WaitForFixedUpdate();
+
+            Assert.AreEqual(ArmorTier.ChainMail, armor.Tier);
+        }
+
+        [UnityTest]
+        public IEnumerator EnemyInTheMaze_DropsChainMail_EvenWhenWearingLeather()
+        {
+            var armor = SpawnPlayer();
+            var dropper = SpawnEnemy(new Vector2(5f, 0f));
+            dropper.GetComponent<Enemy>().Room = SpawnRoom(ArmorTier.ChainMail);
+            yield return null;
+            armor.Equip(ArmorTier.Leather);
+
+            var drop = dropper.TryDropArmor();
+
+            Assert.IsNotNull(drop, "the maze's chain mail is an upgrade over leather");
+            Assert.AreEqual(ArmorTier.ChainMail, drop.GetComponent<ArmorPickup>().Tier);
+        }
+
+        [UnityTest]
+        public IEnumerator EnemyInTheMaze_DropsNothing_OnceTheyHaveChainMail()
+        {
+            var armor = SpawnPlayer();
+            var dropper = SpawnEnemy(new Vector2(5f, 0f));
+            dropper.GetComponent<Enemy>().Room = SpawnRoom(ArmorTier.ChainMail);
+            yield return null;
+            armor.Equip(ArmorTier.ChainMail);
+
+            Assert.IsNull(dropper.TryDropArmor());
+        }
+
         // ---------- picking it up ----------
 
         [UnityTest]
@@ -146,6 +220,15 @@ namespace DungeonCrawler.Tests
 
             spawned.Add(go);
             return go.GetComponent<PlayerArmor>();
+        }
+
+        private Room SpawnRoom(ArmorTier armorLoot)
+        {
+            var go = new GameObject("TestRoom");
+            spawned.Add(go);
+            var room = go.AddComponent<Room>();
+            room.ArmorLoot = armorLoot;
+            return room;
         }
 
         private LootDropper SpawnEnemy(Vector2 position)

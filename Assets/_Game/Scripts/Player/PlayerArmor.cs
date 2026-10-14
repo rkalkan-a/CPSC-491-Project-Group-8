@@ -4,19 +4,23 @@ using DungeonCrawler.UI;
 
 namespace DungeonCrawler.Player
 {
-    // leather armor the player picks up from an enemy drop. wearing it adds one extra heart
-    // and switches the character over to the armored sprites
+    // armor goes up in tiers. a better tier replaces the one being worn
+    public enum ArmorTier { None, Leather, ChainMail }
+
+    // armor the player picks up from enemy drops. each tier adds extra hearts and switches the
+    // character over to that tier's sprites. leather drops in the first dungeon, chain mail in the maze
     [RequireComponent(typeof(PlayerController))]
     public class PlayerArmor : MonoBehaviour
     {
-        [SerializeField, Min(0)] private int extraHearts = 1;
+        [SerializeField, Min(0)] private int leatherHearts = 1;
+        [SerializeField, Min(0)] private int chainMailHearts = 2;
 
-        // the colour of the heart armor adds, on the hud and in the unlock banner
+        // the colour of the hearts armor adds, on the hud and in the unlock banner
         public static readonly Color HeartColor = new Color(1f, 0.82f, 0.2f);
 
-        public bool HasArmor { get; private set; }
-        public int ExtraHearts => HasArmor ? extraHearts : 0;
-        public int ExtraHealth => extraHearts * Health.HpPerHeart;
+        public ArmorTier Tier { get; private set; } = ArmorTier.None;
+        public bool HasArmor => Tier != ArmorTier.None;
+        public int ExtraHearts => HeartsFor(Tier);
 
         private Health health;
         private PlayerSpriteDirection sprites;
@@ -27,16 +31,39 @@ namespace DungeonCrawler.Player
             sprites = GetComponent<PlayerSpriteDirection>();
         }
 
-        // called when the player picks the armor up. does nothing the second time
-        public void Equip()
+        public int HeartsFor(ArmorTier tier) => tier switch
         {
-            if (HasArmor) return;
-            HasArmor = true;
-            if (health != null) health.SetMax(health.Max + ExtraHealth); // also heals the new heart
-            if (sprites != null) sprites.Armored = true;
+            ArmorTier.Leather => leatherHearts,
+            ArmorTier.ChainMail => chainMailHearts,
+            _ => 0,
+        };
+
+        public static string NameOf(ArmorTier tier) => tier switch
+        {
+            ArmorTier.Leather => "Leather Armor",
+            ArmorTier.ChainMail => "Chain Mail Armor",
+            _ => "No armor",
+        };
+
+        // the first armor the player finds
+        public void Equip() => Equip(ArmorTier.Leather);
+
+        // puts on this tier if it's better than what's being worn. returns false if it wasn't an upgrade
+        public bool Equip(ArmorTier tier)
+        {
+            if (tier <= Tier) return false;
+
+            int addedHearts = HeartsFor(tier) - HeartsFor(Tier);
+            Tier = tier; // set before the health changes, so the hud already knows the new hearts are armor hearts
+            if (health != null) health.SetMax(health.Max + addedHearts * Health.HpPerHeart); // also heals the new hearts
+            if (sprites != null) sprites.Tier = tier;
 
             if (UnlockBanner.Instance != null)
-                UnlockBanner.Instance.Show(PixelUI.ArmorIcon(), "YOU UNLOCKED LEATHER ARMOR", "+1 HEART", HeartColor);
+            {
+                string hearts = addedHearts == 1 ? "+1 HEART" : $"+{addedHearts} HEARTS";
+                UnlockBanner.Instance.Show(PixelUI.ArmorIcon(tier), $"YOU UNLOCKED {NameOf(tier).ToUpperInvariant()}", hearts, HeartColor);
+            }
+            return true;
         }
     }
 }
