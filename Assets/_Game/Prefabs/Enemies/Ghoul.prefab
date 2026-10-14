@@ -108,6 +108,7 @@ GameObject:
   - component: {fileID: 1848867671723068115}
   - component: {fileID: 2093599819385891844}
   - component: {fileID: 6510377655098498865}
+  - component: {fileID: 5521440519184291449}
   m_Layer: 0
   m_Name: Ghoul
   m_TagString: Untagged
@@ -271,3 +272,17 @@ MonoBehaviour:
   aggroRange: 7
   wanderSpeed: 1.2
   wanderChangeTime: 1.5
+--- !u!114 &5521440519184291449
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4129414294797591057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 217c475a6c6a366468e55d14c511bfaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Runtime::EnemyAudio
+  hurtSound: {fileID: 8300000, guid: feb1f6abec3e6fb489539c654e7b3e2d, type: 3}
+  deathSound: {fileID: 8300000, guid: 022857e96e5f9d14592a99615f865eb5, type: 3}
