@@ -13,7 +13,7 @@ namespace DungeonCrawler.Rooms
         [SerializeField] private Vector2 size = new Vector2(17f, 10f); // outer size including walls
         [SerializeField] private bool clearedOnEnter = false; // for rooms with no fights (start room, shops etc)
         [SerializeField] private bool lockDoorsUntilCleared = false; // turn on once the player can actually attack
-        [SerializeField] private ArmorTier armorLoot = ArmorTier.Leather; // the armor enemies here drop if the player doesn't have it yet
+        [SerializeField] private ArmorTier armorLoot = ArmorTier.None; // armor enemies here drop if the player doesn't have it yet (the maze drops chain mail)
 
         public ArmorTier ArmorLoot { get => armorLoot; set => armorLoot = value; }
 

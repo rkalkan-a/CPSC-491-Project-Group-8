@@ -12,7 +12,7 @@ using DungeonCrawler.Rooms;
 
 namespace DungeonCrawler.Tests
 {
-    // Play Mode coverage for leather armor: what wearing it does, picking it up, and enemies dropping it.
+    // Play Mode coverage for armor: what wearing it does, the leather chest, picking it up, and maze enemies dropping chain mail.
     //
     // Armor has two states (not worn, worn), so the first group checks that change and that it only
     // happens once. The drop rule is a small decision table: armor only drops when the player isn't
@@ -172,37 +172,91 @@ namespace DungeonCrawler.Tests
         // ---------- enemies dropping it ----------
 
         [UnityTest]
-        public IEnumerator Enemy_DropsArmor_WhenThePlayerHasNone()
+        public IEnumerator Enemy_InANormalRoom_DropsNoArmor()
         {
             SpawnPlayer();
             var dropper = SpawnEnemy(new Vector2(5f, 0f));
+            dropper.GetComponent<Enemy>().Room = SpawnRoom(ArmorTier.None);
             yield return null;
 
-            Assert.IsNotNull(dropper.TryDropArmor());
-        }
-
-        [UnityTest]
-        public IEnumerator Enemy_DoesNotDropArmor_WhenThePlayerIsWearingIt()
-        {
-            var armor = SpawnPlayer();
-            var dropper = SpawnEnemy(new Vector2(5f, 0f));
-            yield return null;
-            armor.Equip();
-
-            Assert.IsNull(dropper.TryDropArmor());
+            Assert.IsNull(dropper.TryDropArmor(), "leather comes from the chest now, not from enemies");
         }
 
         [UnityTest]
         public IEnumerator Enemy_DoesNotDropASecondSet_WhileOneIsOnTheFloor()
         {
             SpawnPlayer();
+            var maze = SpawnRoom(ArmorTier.ChainMail);
             var first = SpawnEnemy(new Vector2(5f, 0f));
             var second = SpawnEnemy(new Vector2(7f, 0f));
+            first.GetComponent<Enemy>().Room = maze;
+            second.GetComponent<Enemy>().Room = maze;
             yield return null;
 
             Assert.IsNotNull(first.TryDropArmor());
             yield return null;
             Assert.IsNull(second.TryDropArmor(), "only one set of armor should be lying around at a time");
+        }
+
+        // ---------- the leather armor chest ----------
+
+        [UnityTest]
+        public IEnumerator LeatherChest_PutsLeatherOnThePlayer_AndIsThenEmpty()
+        {
+            var armor = SpawnPlayer();
+            var chest = SpawnChest(new Vector2(6f, 0f), ArmorTier.Leather);
+            yield return null;
+
+            Assert.IsTrue(chest.TakeItem(armor.GetComponent<PlayerController>()));
+
+            Assert.AreEqual(ArmorTier.Leather, armor.Tier);
+            Assert.IsTrue(chest.IsEmpty);
+            Assert.IsFalse(chest.TakeItem(armor.GetComponent<PlayerController>()), "nothing left the second time");
+        }
+
+        [UnityTest]
+        public IEnumerator LeatherChest_KeepsItsArmor_IfThePlayerAlreadyHasChainMail()
+        {
+            var armor = SpawnPlayer();
+            var chest = SpawnChest(new Vector2(6f, 0f), ArmorTier.Leather);
+            yield return null;
+            armor.Equip(ArmorTier.ChainMail);
+
+            Assert.IsFalse(chest.TakeArmor(armor.GetComponent<PlayerController>()));
+            Assert.AreEqual(ArmorTier.ChainMail, armor.Tier);
+            Assert.IsTrue(chest.ContainsArmor);
+        }
+
+        // ---------- grabbing with E or a click ----------
+
+        [UnityTest]
+        public IEnumerator Grabber_FindsLootInReach_AndGrabsIt()
+        {
+            var armor = SpawnPlayer();
+            var grabber = armor.GetComponent<LootGrabber>();
+            yield return new WaitForFixedUpdate();
+
+            // far enough not to be walked over, close enough to reach
+            var pickup = LootDropper.SpawnArmor(new Vector2(grabber.Reach - 0.5f, 0f), null);
+            yield return new WaitForFixedUpdate();
+
+            var nearest = grabber.NearestLoot();
+            Assert.AreEqual(pickup.GetComponent<ArmorPickup>(), nearest);
+            Assert.IsTrue(grabber.Grab(nearest));
+            Assert.IsTrue(armor.HasArmor);
+        }
+
+        [UnityTest]
+        public IEnumerator Grabber_IgnoresLootOutOfReach()
+        {
+            var armor = SpawnPlayer();
+            var grabber = armor.GetComponent<LootGrabber>();
+            yield return new WaitForFixedUpdate();
+
+            LootDropper.SpawnArmor(new Vector2(grabber.Reach + 2f, 0f), null);
+            yield return new WaitForFixedUpdate();
+
+            Assert.IsNull(grabber.NearestLoot());
         }
 
         // ---------- fixtures ----------
@@ -220,6 +274,19 @@ namespace DungeonCrawler.Tests
 
             spawned.Add(go);
             return go.GetComponent<PlayerArmor>();
+        }
+
+        private Chest SpawnChest(Vector2 position, ArmorTier armor)
+        {
+            var go = new GameObject("TestChest");
+            go.transform.position = position;
+            go.AddComponent<BoxCollider2D>();
+            var chest = go.AddComponent<Chest>();
+            spawned.Add(go);
+
+            chest.ContainsSword = false; // chests hold the sword by default, this one only holds armor
+            chest.Armor = armor;
+            return chest;
         }
 
         private Room SpawnRoom(ArmorTier armorLoot)

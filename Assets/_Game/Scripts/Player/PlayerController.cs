@@ -31,6 +31,7 @@ namespace DungeonCrawler.Player
             if (GetComponent<PlayerMelee>() == null) gameObject.AddComponent<PlayerMelee>();
             if (GetComponent<PlayerSword>() == null) gameObject.AddComponent<PlayerSword>();
             if (GetComponent<PlayerArmor>() == null) gameObject.AddComponent<PlayerArmor>();
+            if (GetComponent<Loot.LootGrabber>() == null) gameObject.AddComponent<Loot.LootGrabber>();
 
             if (inputActions == null)
             {

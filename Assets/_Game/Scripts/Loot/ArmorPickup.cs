@@ -3,7 +3,7 @@ using DungeonCrawler.Player;
 
 namespace DungeonCrawler.Loot
 {
-    // armor on the floor. the player puts it on by walking over it, if it's better than what they're wearing
+    // armor on the floor. the player puts it on by walking over it, clicking it or pressing E, if it's better than what they're wearing
     [RequireComponent(typeof(Collider2D))]
     public class ArmorPickup : MonoBehaviour
     {
@@ -19,12 +19,17 @@ namespace DungeonCrawler.Loot
         private void OnTriggerEnter2D(Collider2D other)
         {
             var player = other.GetComponentInParent<PlayerController>();
-            if (player == null) return;
+            if (player != null) Grab(player);
+        }
 
-            var armor = player.GetComponent<PlayerArmor>();
-            if (armor == null || !armor.Equip(tier)) return;
+        // walking over it, clicking it, or pressing E next to it all end up here
+        public bool Grab(PlayerController player)
+        {
+            var armor = player != null ? player.GetComponent<PlayerArmor>() : null;
+            if (armor == null || !armor.Equip(tier)) return false;
 
             Destroy(gameObject);
+            return true;
         }
     }
 }

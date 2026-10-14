@@ -42,7 +42,7 @@ namespace DungeonCrawler.Loot
         public GameObject TryDropArmor()
         {
             var enemy = GetComponent<Enemy>();
-            ArmorTier tier = enemy != null && enemy.Room != null ? enemy.Room.ArmorLoot : ArmorTier.Leather;
+            ArmorTier tier = enemy != null && enemy.Room != null ? enemy.Room.ArmorLoot : ArmorTier.None;
             if (tier == ArmorTier.None) return null;
 
             var player = GameManager.Instance != null ? GameManager.Instance.Player : null;

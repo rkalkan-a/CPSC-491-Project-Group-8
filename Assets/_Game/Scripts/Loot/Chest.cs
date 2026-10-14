@@ -5,7 +5,8 @@ using DungeonCrawler.Audio;
 
 namespace DungeonCrawler.Loot
 {
-    // walk into it and it pops open and shows the chest panel. nothing inside yet, that's the loot phase
+    // walk into it, click it, or press E next to it and it pops open and shows the chest panel.
+    // holds the sword, a piece of armor, or both
     [RequireComponent(typeof(Collider2D))]
     public class Chest : MonoBehaviour
     {
@@ -14,10 +15,14 @@ namespace DungeonCrawler.Loot
         [SerializeField] private Sprite openSprite;
         [SerializeField] private AudioClip openSound;
         [SerializeField] private bool containsSword = true; // the first chest is where the player gets their sword
+        [SerializeField] private ArmorTier armor = ArmorTier.None; // the leather armor chest in the first dungeon room
 
         public bool IsOpen { get; private set; }
         public SpriteRenderer Sprite => sprite;
-        public bool ContainsSword => containsSword;
+        public bool ContainsSword { get => containsSword; set => containsSword = value; }
+        public ArmorTier Armor { get => armor; set => armor = value; }
+        public bool ContainsArmor => armor != ArmorTier.None;
+        public bool IsEmpty => !containsSword && !ContainsArmor;
 
         private void Awake()
         {
@@ -61,5 +66,19 @@ namespace DungeonCrawler.Loot
             sword.Equip();
             return true;
         }
+
+        // puts the armor in here on the player. returns false if there's none or it's not better than what they have on
+        public bool TakeArmor(PlayerController player)
+        {
+            if (!ContainsArmor || player == null) return false;
+            var worn = player.GetComponent<PlayerArmor>();
+            if (worn == null || !worn.Equip(armor)) return false;
+
+            armor = ArmorTier.None;
+            return true;
+        }
+
+        // takes whatever is in the chest, sword first
+        public bool TakeItem(PlayerController player) => TakeSword(player) || TakeArmor(player);
     }
 }

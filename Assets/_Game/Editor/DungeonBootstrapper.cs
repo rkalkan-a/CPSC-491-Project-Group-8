@@ -308,6 +308,58 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Maze_03 added after Room_02. Save the scene (Cmd+S).");
         }
 
+        // the maze becomes the level right after Dungeon_01 (its top door leads straight in) and the placeholder
+        // Room_02 goes away. leather armor moves out of enemy drops into a glowing chest in Dungeon_01's top left corner
+        [MenuItem("Tools/Dungeon/Put Maze After Dungeon_01 (Leather Chest)", priority = 2)]
+        public static void PutMazeAfterDungeon()
+        {
+            Room dungeon = null, room2 = null, maze = null;
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+            {
+                if (r.name == "Dungeon_01") dungeon = r;
+                else if (r.name == "Room_02") room2 = r;
+                else if (r.name == "Maze_03") maze = r;
+            }
+            if (dungeon == null || maze == null) { Debug.LogWarning("Needs Dungeon_01 and Maze_03 in the open scene."); return; }
+
+            Door north = FindDoor(dungeon, DoorSide.North);
+            Door entrance = FindDoor(maze, DoorSide.South);
+            north.Link(entrance);
+            EditorUtility.SetDirty(north);
+            EditorUtility.SetDirty(entrance);
+
+            if (room2 != null) Object.DestroyImmediate(room2.gameObject);
+
+            // only the maze drops armor now (chain mail). leather comes from the chest
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+            {
+                var so = new SerializedObject(r);
+                so.FindProperty("armorLoot").enumValueIndex = (int)(r == maze ? ArmorTier.ChainMail : ArmorTier.None);
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            bool hasArmorChest = false;
+            foreach (var c in dungeon.GetComponentsInChildren<Chest>(true)) hasArmorChest |= c.ContainsArmor;
+            if (!hasArmorChest)
+            {
+                Chest chest = MakeChest(dungeon.transform, MapPixelToWorld(dungeon, DungeonPixelsPerUnit, 340f, 240f), null);
+                if (chest != null)
+                {
+                    chest.name = "Chest_LeatherArmor";
+                    var so = new SerializedObject(chest);
+                    so.FindProperty("containsSword").boolValue = false;
+                    so.FindProperty("armor").enumValueIndex = (int)ArmorTier.Leather;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            ImportAsPixelSprite(MazeMapPath, MazePixelsPerUnit);
+            dungeon.RefreshChildren();
+            maze.RefreshChildren();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("Maze_03 now follows Dungeon_01, leather armor is in a chest. Save the scene (Cmd+S).");
+        }
+
         [MenuItem("Tools/Dungeon/Update Player Prefab", priority = 3)]
         public static void UpdatePlayerPrefab()
         {
@@ -630,16 +682,16 @@ namespace DungeonCrawler.EditorTools
             return spawn;
         }
 
-        private static void MakeChest(Transform parent, Vector2 position, Sprite square)
+        private static Chest MakeChest(Transform parent, Vector2 position, Sprite square)
         {
             const string closedPath = "Assets/_Game/Art/Chests/chest_closed.png";
             const string openPath = "Assets/_Game/Art/Chests/chest_open.png";
-            if (!File.Exists(closedPath)) { Debug.LogWarning("no chest art at " + closedPath); return; }
+            if (!File.Exists(closedPath)) { Debug.LogWarning("no chest art at " + closedPath); return null; }
             ImportAsPixelSprite(closedPath, 48f);
             ImportAsPixelSprite(openPath, 48f);
             var closed = AssetDatabase.LoadAssetAtPath<Sprite>(closedPath);
             var open = AssetDatabase.LoadAssetAtPath<Sprite>(openPath);
-            if (closed == null) { Debug.LogWarning("chest sprite didn't import, click into unity and run the build again"); return; }
+            if (closed == null) { Debug.LogWarning("chest sprite didn't import, click into unity and run the build again"); return null; }
 
             var go = new GameObject("Chest");
             go.transform.SetParent(parent, false);
@@ -662,6 +714,7 @@ namespace DungeonCrawler.EditorTools
 
             // glow + sparkles are built at runtime by ChestGlow
             go.AddComponent<ChestGlow>();
+            return chest;
         }
 
         private static void BuildChestPanel(Transform canvas)

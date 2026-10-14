@@ -45,7 +45,9 @@ namespace DungeonCrawler.UI
         private GameObject inventoryScreen;
         private Loot.Chest currentChest;
         private GameObject chestSwordIcon;   // the sword sitting in the chest's first slot
-        private GameObject takeHint;
+        private Image chestArmorIcon;        // or the armor, if that's what this chest holds
+        private TextMeshProUGUI takeHint;
+        private int openedOnFrame = -1;
         private readonly List<GameObject> hotbarSwordIcons = new();  // one per screen, shown once the player has the sword
         private Image portrait;              // the character as they look right now, armor included
         private GameObject armorIcon;
@@ -78,10 +80,17 @@ namespace DungeonCrawler.UI
 
         public void ShowInventory(PlayerController opener) => Open(inventoryScreen, opener, null);
 
-        // moves the sword from the open chest to the player. clicking the sword or pressing E does this
+        // moves the sword from the open chest to the player
         public void TakeSword()
         {
             if (currentChest == null || !currentChest.TakeSword(player)) return;
+            Refresh();
+        }
+
+        // moves whatever is in the open chest to the player. clicking the item or pressing E does this
+        public void TakeItem()
+        {
+            if (currentChest == null || !currentChest.TakeItem(player)) return;
             Refresh();
         }
 
@@ -104,17 +113,22 @@ namespace DungeonCrawler.UI
             Hide();
             player = opener;
             currentChest = chest;
+            openedOnFrame = Time.frameCount;
             if (player != null) player.InputEnabled = false;
             screen.SetActive(true);
             Refresh();
         }
 
-        // shows the sword wherever it currently is: still in the chest, or in the player's hotbar
+        // shows the items wherever they currently are: still in the chest, or on the player
         private void Refresh()
         {
-            bool inChest = currentChest != null && currentChest.ContainsSword;
-            chestSwordIcon.SetActive(inChest);
-            takeHint.SetActive(inChest);
+            bool swordInChest = currentChest != null && currentChest.ContainsSword;
+            bool armorInChest = !swordInChest && currentChest != null && currentChest.ContainsArmor;
+            chestSwordIcon.SetActive(swordInChest);
+            chestArmorIcon.gameObject.SetActive(armorInChest);
+            if (armorInChest) chestArmorIcon.sprite = PixelUI.ArmorIcon(currentChest.Armor);
+            takeHint.gameObject.SetActive(swordInChest || armorInChest);
+            takeHint.text = swordInChest ? "Click the sword or press E to take it" : "Click the armor or press E to put it on";
 
             var sword = player != null ? player.GetComponent<PlayerSword>() : null;
             bool carried = sword != null && sword.HasSword;
@@ -158,7 +172,8 @@ namespace DungeonCrawler.UI
             }
 
             if (!IsShowing) return;
-            if (keyboard != null && keyboard.eKey.wasPressedThisFrame) TakeSword();
+            // the E that opened the chest shouldn't also empty it
+            if (keyboard != null && keyboard.eKey.wasPressedThisFrame && Time.frameCount != openedOnFrame) TakeItem();
             bool esc = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
             bool back = Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
             if (esc || back) Hide();
@@ -195,19 +210,21 @@ namespace DungeonCrawler.UI
             if (withChest)
             {
                 AddLabel(content, "Chest", y, gridW);
-                takeHint = AddHint(content, "Click the sword or press E to take it", y, gridW);
+                takeHint = AddHint(content, "Click the sword or press E to take it", y, gridW).GetComponent<TextMeshProUGUI>();
                 y -= labelH;
                 y = AddGrid(content, slotSprite, ChestRows, y, gridW, out List<Image> chestSlots);
                 Image chestSlot = chestSlots[0];
                 y -= sectionGap;
 
-                // the sword starts in the chest's first slot, and the slot is a button that takes it
+                // the item starts in the chest's first slot, and the slot is a button that takes it
                 chestSwordIcon = AddSwordIcon(chestSlot.transform);
+                chestArmorIcon = NewImage("ArmorIcon", chestSlot.transform, PixelUI.ArmorIcon());
+                chestArmorIcon.rectTransform.sizeDelta = new Vector2(40f, 40f);
                 chestSlot.raycastTarget = true;
                 var take = chestSlot.gameObject.AddComponent<Button>();
                 take.targetGraphic = chestSlot;
                 take.navigation = new Navigation { mode = Navigation.Mode.None };
-                take.onClick.AddListener(TakeSword);
+                take.onClick.AddListener(TakeItem);
             }
             else
             {
