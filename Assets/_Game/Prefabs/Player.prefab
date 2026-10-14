@@ -160,9 +160,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63f5f4d411085466d9cfe45e7b066e18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Combat.BleedOnHit
-  bloodColor: {r: 0.45, g: 0.02, b: 0.05, a: 1}
-  spread: 0.7
-  lifetime: 25
+  bloodColor: {r: 0.34, g: 0.02, b: 0.04, a: 0.8}
+  spread: 0.35
+  lifetime: 10
 --- !u!114 &4955719312650526027
 MonoBehaviour:
   m_ObjectHideFlags: 0

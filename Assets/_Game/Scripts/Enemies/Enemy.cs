@@ -112,7 +112,7 @@ namespace DungeonCrawler.Enemies
 
             var bleed = GetComponent<BleedOnHit>();
             if (bleed != null && GameSettings.Gore != GameSettings.GoreOff)
-                bleed.Splat(transform.position, GameSettings.Gore == GameSettings.GoreFull ? 10 : 3);
+                bleed.Splat(transform.position, GameSettings.Gore == GameSettings.GoreFull ? 3 : 1);
 
             Died?.Invoke(this);
             Destroy(gameObject);
