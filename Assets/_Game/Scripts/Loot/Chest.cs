@@ -40,7 +40,8 @@ namespace DungeonCrawler.Loot
                 if (sprite != null && openSprite != null)
                     sprite.sprite = openSprite;
 
-                SFXManager.Instance.PlaySFX(openSound);
+                // no sound manager in the scene shouldn't stop the chest from opening
+                if (SFXManager.Instance != null && openSound != null) SFXManager.Instance.PlaySFX(openSound);
             }
 
             if (ChestPanel.Instance != null)

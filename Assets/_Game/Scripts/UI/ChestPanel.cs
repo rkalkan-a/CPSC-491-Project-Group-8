@@ -2,13 +2,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using DungeonCrawler.Core;
 using DungeonCrawler.Player;
 
 namespace DungeonCrawler.UI
 {
-    // the popup you get when opening a chest, laid out like a minecraft chest screen:
-    // chest slots on top, the player's inventory + hotbar underneath. escape closes it.
-    // items will go in the slots later. the panel is built in code so the look lives in one place
+    // the slot screens, laid out like minecraft's:
+    //   chest screen     - chest slots on top, the player's inventory + hotbar underneath. opens when you walk into a chest
+    //   inventory screen - just the inventory + hotbar. opens with I or Tab, or the inventory button
+    // escape closes either one. items will go in the slots later. everything is built in code so the look lives in one place
     public class ChestPanel : MonoBehaviour
     {
         public static ChestPanel Instance { get; private set; }
@@ -38,16 +40,24 @@ namespace DungeonCrawler.UI
         private static readonly Color Label = new Color(0.9f, 0.82f, 0.68f);
 
         private PlayerController player;
-        private GameObject root;
+        private GameObject chestScreen;
+        private GameObject inventoryScreen;
 
-        public bool IsShowing => root != null && root.activeSelf;
+        public TMP_FontAsset Font => titleFont;
+        public bool IsShowing => (chestScreen != null && chestScreen.activeSelf) || (inventoryScreen != null && inventoryScreen.activeSelf);
 
         private void Awake()
         {
             Instance = this;
             if (panelRoot != null) Destroy(panelRoot);
-            Build();
-            root.SetActive(false);
+
+            // added before the screens are built so the screens draw over it
+            if (GetComponent<ControlsHint>() == null) gameObject.AddComponent<ControlsHint>();
+
+            chestScreen = BuildScreen("ChestScreen", true);
+            inventoryScreen = BuildScreen("InventoryScreen", false);
+            chestScreen.SetActive(false);
+            inventoryScreen.SetActive(false);
         }
 
         private void OnDestroy()
@@ -55,17 +65,37 @@ namespace DungeonCrawler.UI
             if (Instance == this) Instance = null;
         }
 
-        public void Show(Loot.Chest chest, PlayerController opener)
+        public void Show(Loot.Chest chest, PlayerController opener) => Open(chestScreen, opener);
+
+        public void ShowInventory(PlayerController opener) => Open(inventoryScreen, opener);
+
+        // what the inventory key and the on-screen inventory button both do
+        public void ToggleInventory()
         {
+            if (IsShowing)
+            {
+                Hide();
+                return;
+            }
+            if (PauseMenu.IsPaused) return;
+            var current = GameManager.Instance != null ? GameManager.Instance.Player : null;
+            if (current == null || !current.InputEnabled) return; // mid room transition, dead, etc
+            ShowInventory(current);
+        }
+
+        private void Open(GameObject screen, PlayerController opener)
+        {
+            Hide();
             player = opener;
             if (player != null) player.InputEnabled = false;
-            root.SetActive(true);
+            screen.SetActive(true);
         }
 
         public void Hide()
         {
             if (!IsShowing) return;
-            root.SetActive(false);
+            chestScreen.SetActive(false);
+            inventoryScreen.SetActive(false);
             ClosedOnFrame = Time.frameCount;
             if (player != null) player.InputEnabled = true;
             player = null;
@@ -73,15 +103,23 @@ namespace DungeonCrawler.UI
 
         private void Update()
         {
+            var keyboard = Keyboard.current;
+            bool inventoryKey = keyboard != null && (keyboard.iKey.wasPressedThisFrame || keyboard.tabKey.wasPressedThisFrame);
+            if (inventoryKey)
+            {
+                ToggleInventory();
+                return;
+            }
+
             if (!IsShowing) return;
-            bool esc = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+            bool esc = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
             bool back = Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
             if (esc || back) Hide();
         }
 
-        private void Build()
+        private GameObject BuildScreen(string name, bool withChest)
         {
-            root = new GameObject("ChestScreen", typeof(RectTransform));
+            var root = new GameObject(name, typeof(RectTransform));
             root.transform.SetParent(transform, false);
             Stretch((RectTransform)root.transform);
 
@@ -91,8 +129,9 @@ namespace DungeonCrawler.UI
 
             float gridW = Columns * SlotSize + (Columns - 1) * SlotGap;
             float RowsHeight(int rows) => rows * SlotSize + (rows - 1) * SlotGap;
-            const float labelH = 34f, hotbarGap = 14f;
-            float height = Pad + labelH + RowsHeight(ChestRows) + 12f + labelH + RowsHeight(InventoryRows) + hotbarGap + SlotSize + Pad;
+            const float labelH = 34f, hotbarGap = 14f, sectionGap = 12f;
+            float height = Pad + labelH + RowsHeight(InventoryRows) + hotbarGap + SlotSize + Pad;
+            if (withChest) height += labelH + RowsHeight(ChestRows) + sectionGap;
             float width = gridW + Pad * 2f;
 
             var panel = NewImage("Panel", root.transform, PixelUI.Bevel(PanelFill, PanelLight, PanelDark, Outline, 2));
@@ -105,17 +144,21 @@ namespace DungeonCrawler.UI
 
             // lay things out top to bottom
             float y = -Pad;
-            AddLabel(content, "Chest", y, gridW);
-            y -= labelH;
-            y = AddGrid(content, slotSprite, ChestRows, y, gridW);
+            if (withChest)
+            {
+                AddLabel(content, "Chest", y, gridW);
+                y -= labelH;
+                y = AddGrid(content, slotSprite, ChestRows, y, gridW);
+                y -= sectionGap;
+            }
 
-            y -= 12f;
             AddLabel(content, "Inventory", y, gridW);
             y -= labelH;
             y = AddGrid(content, slotSprite, InventoryRows, y, gridW);
 
             y -= hotbarGap;
             AddGrid(content, slotSprite, 1, y, gridW);
+            return root;
         }
 
         private void AddLabel(RectTransform parent, string text, float top, float width)
