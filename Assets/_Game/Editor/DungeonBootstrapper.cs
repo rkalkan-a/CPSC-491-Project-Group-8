@@ -32,22 +32,21 @@ namespace DungeonCrawler.EditorTools
         private const string DungeonMapPath = "Assets/_Game/Art/Maps/dungeon_room_01.png";
         private const string DungeonCollidersPath = "Assets/_Game/Art/Maps/dungeon_room_01_colliders.json";
         private const float DungeonPixelsPerUnit = 64f; // 1536px room -> 24 units wide, fits on screen in one go
-        private const string MazeMapPath = "Assets/_Game/Art/Maps/dungeon_maze_03.png";
-        private const string MazeCollidersPath = "Assets/_Game/Art/Maps/dungeon_maze_03_colliders.json";
-        private const float MazePixelsPerUnit = 20f; // layout pixels (the colliders json is 1536 wide) -> about 77 units wide, so the corridors fit the player
-        private const float MazeArtScale = 3f;       // the maze art is drawn at 3x the layout (4608px), so it's as sharp as the first room
-        // roomy spots spread through the maze, picked from its walkable area. image pixels
-        private static readonly Vector2[] MazeEnemySpawns =
+        private const string Level3MapPath = "Assets/_Game/Art/Maps/dungeon_level_03.png";
+        private const string Level3CollidersPath = "Assets/_Game/Art/Maps/dungeon_level_03_colliders.json";
+        private const float Level3PixelsPerUnit = 44f; // 1536px -> about 35 units wide. the narrowest paths still fit the player
+        // open spots spread through level 3, all checked reachable from the entrance. image pixels
+        private static readonly Vector2[] Level3EnemySpawns =
         {
-            new Vector2(1301f, 650f),
-            new Vector2(282f, 771f),
-            new Vector2(205f, 481f),
-            new Vector2(1048f, 855f),
-            new Vector2(733f, 157f),
-            new Vector2(1046f, 520f),
-            new Vector2(548f, 652f),
-            new Vector2(222f, 306f),
-            new Vector2(402f, 371f),
+            new Vector2(330f, 262f),   // top left courtyard
+            new Vector2(620f, 412f),   // left corridor
+            new Vector2(760f, 470f),   // centre plaza
+            new Vector2(855f, 300f),   // below the exit stairs
+            new Vector2(1250f, 320f),  // camp
+            new Vector2(1285f, 600f),  // right side, by the rug
+            new Vector2(540f, 615f),   // bottom left torch room
+            new Vector2(1040f, 698f),  // walkway right of the entrance
+            new Vector2(300f, 515f),   // landing below the left stairs
         };
         private const float PlayerArtPixelsPerUnit = 800f; // the sprites are big, this makes the character about 1.4 units tall
 
@@ -72,7 +71,7 @@ namespace DungeonCrawler.EditorTools
                 // you only need this to start a brand new project. to play the game use Tools > Dungeon > Play Game
                 bool overwrite = EditorUtility.DisplayDialog(
                     "Erase the whole level?",
-                    "This deletes everything in Level_01 (the dungeon rooms, the maze, every enemy, the chests and doors) " +
+                    "This deletes everything in Level_01 (the dungeon rooms, level 3, every enemy, the chests and doors) " +
                     "and replaces it with a bare starter level.\n\nTo just play the game, cancel and use Tools > Dungeon > Play Game.",
                     "Erase and rebuild", "Keep my level");
                 if (!overwrite) return;
@@ -272,126 +271,56 @@ namespace DungeonCrawler.EditorTools
             Debug.Log("Room_01 replaced with Dungeon_01. Save the scene (Cmd+S).");
         }
 
-        // adds the third level, the big maze, to the left of Room_02. a new west door in Room_02 leads into
-        // the maze's bottom entrance. enemies here drop chain mail. leaves the rest of the scene alone
-        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Maze Level After Room_02", priority = 2)]
-        public static void AddMazeLevel()
+        // level 3 (the ruins with the camp and the waterfall) comes right after Dungeon_01: its top door leads
+        // in through the bottom gate. replaces the old maze or the grey Room_02 if either is still there.
+        // chain mail sits in a glowing chest by the exit, leather stays in Dungeon_01's chest
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Put Level 3 After Dungeon_01", priority = 2)]
+        public static void PutLevel3AfterDungeon()
         {
-            Room room2 = null;
+            Room dungeon = null;
             foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
             {
-                if (r.name == "Maze_03") { Debug.LogWarning("The maze is already in this scene."); return; }
-                if (r.name == "Room_02") room2 = r;
+                if (r.name == "Level_03") { Debug.LogWarning("Level_03 is already in this scene."); return; }
+                if (r.name == "Dungeon_01") dungeon = r;
             }
-            if (room2 == null) { Debug.LogWarning("No Room_02 in the open scene to attach the maze to."); return; }
-            var sprite = LoadMapSprite(MazeMapPath, MazePixelsPerUnit);
-            if (sprite == null) { Debug.LogWarning("No maze map at " + MazeMapPath); return; }
+            if (dungeon == null) { Debug.LogWarning("No Dungeon_01 in the open scene to attach level 3 to."); return; }
+            var sprite = LoadMapSprite(Level3MapPath, Level3PixelsPerUnit);
+            if (sprite == null) { Debug.LogWarning("No level 3 map at " + Level3MapPath); return; }
 
-            Door west = FindDoor(room2, DoorSide.West) ?? AddDoor(room2, DoorSide.West);
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+                if (r.name == "Maze_03" || r.name == "Room_02") Object.DestroyImmediate(r.gameObject);
 
-            float mazeW = sprite.bounds.size.x;
-            Vector2 center = new Vector2(room2.Center.x - room2.Size.x * 0.5f - RoomGap - mazeW * 0.5f, room2.Center.y);
-            Room maze = BuildMapRoom(room2.transform.parent, "Maze_03", MazeMapPath, MazeCollidersPath, MazePixelsPerUnit, center, false);
+            // to the left of Dungeon_01, where the maze used to be
+            float w = sprite.bounds.size.x;
+            Vector2 center = new Vector2(dungeon.Center.x - dungeon.Size.x * 0.5f - RoomGap - w * 0.5f, dungeon.Center.y);
+            Room level = BuildMapRoom(dungeon.transform.parent, "Level_03", Level3MapPath, Level3CollidersPath, Level3PixelsPerUnit, center, false);
 
-            // bottom archway. arriving puts the player a couple of units inside the first room
-            Door entrance = AddMapDoor(maze, DoorSide.South, MazePixelsPerUnit, 725f, 880f, new Vector2(1.6f, 1.2f), 2f);
-            entrance.Link(west);
+            // bottom gate is the way in, arriving a couple of units up the path. the top gate is the exit (no level 4 yet)
+            Door entrance = AddMapDoor(level, DoorSide.South, Level3PixelsPerUnit, 850f, 835f, new Vector2(1.6f, 1.0f), 2.2f);
+            Door north = FindDoor(dungeon, DoorSide.North);
+            entrance.Link(north);
             EditorUtility.SetDirty(entrance);
-            EditorUtility.SetDirty(west);
+            EditorUtility.SetDirty(north);
+            AddMapDoor(level, DoorSide.North, Level3PixelsPerUnit, 835f, 70f, new Vector2(1.4f, 1.0f), 2.2f);
 
-            foreach (var p in MazeEnemySpawns)
-                AddEnemySpawn(maze, MapPixelToWorld(maze, MazePixelsPerUnit, p.x, p.y));
+            foreach (var p in Level3EnemySpawns)
+                AddEnemySpawn(level, MapPixelToWorld(level, Level3PixelsPerUnit, p.x, p.y));
 
-            var so = new SerializedObject(maze);
-            so.FindProperty("armorLoot").enumValueIndex = (int)ArmorTier.ChainMail;
-            so.ApplyModifiedPropertiesWithoutUndo();
+            // on the landing right of the exit stairs
+            Chest chest = MakeChest(level.transform, MapPixelToWorld(level, Level3PixelsPerUnit, 945f, 160f), null);
+            if (chest != null)
+            {
+                chest.name = "Chest_ChainMail";
+                var cso = new SerializedObject(chest);
+                cso.FindProperty("containsSword").boolValue = false;
+                cso.FindProperty("armor").enumValueIndex = (int)ArmorTier.ChainMail;
+                cso.ApplyModifiedPropertiesWithoutUndo();
+            }
 
+            level.RefreshChildren();
             EnemyBuilder.SetupEnemiesInScene();
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-            Debug.Log("Maze_03 added after Room_02. Save the scene (Cmd+S).");
-        }
-
-        // the maze becomes the level right after Dungeon_01 (its top door leads straight in) and the placeholder
-        // Room_02 goes away. leather armor moves out of enemy drops into a glowing chest in Dungeon_01's top left corner
-        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Put Maze After Dungeon_01 (Leather Chest)", priority = 2)]
-        public static void PutMazeAfterDungeon()
-        {
-            Room dungeon = null, room2 = null, maze = null;
-            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
-            {
-                if (r.name == "Dungeon_01") dungeon = r;
-                else if (r.name == "Room_02") room2 = r;
-                else if (r.name == "Maze_03") maze = r;
-            }
-            if (dungeon == null || maze == null) { Debug.LogWarning("Needs Dungeon_01 and Maze_03 in the open scene."); return; }
-
-            Door north = FindDoor(dungeon, DoorSide.North);
-            Door entrance = FindDoor(maze, DoorSide.South);
-            north.Link(entrance);
-            EditorUtility.SetDirty(north);
-            EditorUtility.SetDirty(entrance);
-
-            if (room2 != null) Object.DestroyImmediate(room2.gameObject);
-
-            // only the maze drops armor now (chain mail). leather comes from the chest
-            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
-            {
-                var so = new SerializedObject(r);
-                so.FindProperty("armorLoot").enumValueIndex = (int)(r == maze ? ArmorTier.ChainMail : ArmorTier.None);
-                so.ApplyModifiedPropertiesWithoutUndo();
-            }
-
-            bool hasArmorChest = false;
-            foreach (var c in dungeon.GetComponentsInChildren<Chest>(true)) hasArmorChest |= c.ContainsArmor;
-            if (!hasArmorChest)
-            {
-                Chest chest = MakeChest(dungeon.transform, MapPixelToWorld(dungeon, DungeonPixelsPerUnit, 340f, 240f), null);
-                if (chest != null)
-                {
-                    chest.name = "Chest_LeatherArmor";
-                    var so = new SerializedObject(chest);
-                    so.FindProperty("containsSword").boolValue = false;
-                    so.FindProperty("armor").enumValueIndex = (int)ArmorTier.Leather;
-                    so.ApplyModifiedPropertiesWithoutUndo();
-                }
-            }
-
-            ImportAsPixelSprite(MazeMapPath, MazePixelsPerUnit * MazeArtScale);
-            dungeon.RefreshChildren();
-            maze.RefreshChildren();
-            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-            Debug.Log("Maze_03 now follows Dungeon_01, leather armor is in a chest. Save the scene (Cmd+S).");
-        }
-
-        // chain mail sits in a glowing chest in the maze's exit room, so it's the reward for getting through.
-        // maze enemies stop dropping it
-        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Chain Mail Chest To Maze", priority = 2)]
-        public static void AddChainMailChestToMaze()
-        {
-            Room maze = null;
-            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
-                if (r.name == "Maze_03") maze = r;
-            if (maze == null) { Debug.LogWarning("No Maze_03 in the open scene."); return; }
-
-            var so = new SerializedObject(maze);
-            so.FindProperty("armorLoot").enumValueIndex = (int)ArmorTier.None;
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            foreach (var c in maze.GetComponentsInChildren<Chest>(true))
-                if (c.Armor == ArmorTier.ChainMail) { Debug.Log("The maze already has its chain mail chest."); return; }
-
-            // left of the red carpet, just before the exit arch. layout pixels
-            Chest chest = MakeChest(maze.transform, MapPixelToWorld(maze, MazePixelsPerUnit, 720f, 170f), null);
-            if (chest == null) return;
-            chest.name = "Chest_ChainMail";
-            var cso = new SerializedObject(chest);
-            cso.FindProperty("containsSword").boolValue = false;
-            cso.FindProperty("armor").enumValueIndex = (int)ArmorTier.ChainMail;
-            cso.ApplyModifiedPropertiesWithoutUndo();
-
-            maze.RefreshChildren();
-            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-            Debug.Log("Chain mail chest added to the maze's exit room. Save the scene (Cmd+S).");
+            Debug.Log("Level_03 added after Dungeon_01. Save the scene (Cmd+S).");
         }
 
         [MenuItem("Tools/Dungeon/Advanced (changes the level)/Update Player Prefab", priority = 3)]
@@ -510,13 +439,9 @@ namespace DungeonCrawler.EditorTools
         }
 
         // colliders json is a list of polygon outlines in image pixels. outer shapes block, shapes inside them are holes (the walkable bits)
-        // ppu is in layout pixels (what the colliders json and the pixel positions use). art drawn at a higher
-        // resolution than its layout is imported with a matching higher ppu so it covers the same area
-        private static float ArtScale(string path) => path == MazeMapPath ? MazeArtScale : 1f;
-
         private static Sprite LoadMapSprite(string path, float ppu)
         {
-            ImportAsPixelSprite(path, ppu * ArtScale(path));
+            ImportAsPixelSprite(path, ppu);
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
@@ -526,8 +451,8 @@ namespace DungeonCrawler.EditorTools
             var sprite = LoadMapSprite(pngPath, ppu);
             if (sprite == null) return null;
 
-            float w = sprite.texture.width / (ppu * ArtScale(pngPath));
-            float h = sprite.texture.height / (ppu * ArtScale(pngPath));
+            float w = sprite.texture.width / ppu;
+            float h = sprite.texture.height / ppu;
 
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);

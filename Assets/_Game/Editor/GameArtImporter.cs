@@ -36,7 +36,7 @@ namespace DungeonCrawler.EditorTools
             if (path.Contains("/Placeholders/")) return 32f;
             if (path.Contains("/Maps/"))
             {
-                if (path.Contains("maze")) return 60f; // 4608px maze -> about 77 units wide so the corridors fit the player, as sharp as the first room
+                if (path.Contains("level_03")) return 44f; // about 35 units wide, the narrowest paths still fit the player
                 return path.Contains("dungeon") ? 64f : 48f; // dungeon rooms are 24 units wide, the forest is 32
             }
             if (path.Contains("/Player/")) return 800f;
