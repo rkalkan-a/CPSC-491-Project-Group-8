@@ -635,6 +635,7 @@ MonoBehaviour:
   closedSprite: {fileID: 21300000, guid: 569f2ba91f5634845b78b2a7072929b7, type: 3}
   openSprite: {fileID: 21300000, guid: c3eadab101a85404fbbbfc5479dd95d8, type: 3}
   openSound: {fileID: 8300000, guid: b7b263082919eef449760f99e40746dc, type: 3}
+  containsSword: 1
 --- !u!61 &306413985
 BoxCollider2D:
   m_ObjectHideFlags: 0

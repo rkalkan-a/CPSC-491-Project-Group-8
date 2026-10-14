@@ -27,8 +27,10 @@ namespace DungeonCrawler.Player
             rb.gravityScale = 0f;
             rb.freezeRotation = true;
 
-            // melee needs nothing assigned in the editor, so every player gets it automatically
+            // melee, the sword and armor need nothing assigned in the editor, so every player gets them automatically
             if (GetComponent<PlayerMelee>() == null) gameObject.AddComponent<PlayerMelee>();
+            if (GetComponent<PlayerSword>() == null) gameObject.AddComponent<PlayerSword>();
+            if (GetComponent<PlayerArmor>() == null) gameObject.AddComponent<PlayerArmor>();
 
             if (inputActions == null)
             {

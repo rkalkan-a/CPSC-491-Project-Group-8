@@ -7,7 +7,7 @@ namespace DungeonCrawler.Combat
     [RequireComponent(typeof(Collider2D))]
     public class HealthPickup : MonoBehaviour
     {
-        [SerializeField, Min(1)] private int healAmount = 2;
+        [SerializeField, Min(1)] private int healAmount = Health.HpPerHeart; // one full heart
         [SerializeField] private bool onlyIfHurt = true;
 
         private void Reset()

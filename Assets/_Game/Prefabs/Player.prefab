@@ -115,7 +115,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 782e5cefa541946cd84b3cfe9c3af963, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonCrawler.Combat.Health
-  maxHealth: 6
+  maxHealth: 12
   invulnerabilityTime: 0.5
 --- !u!114 &7521164959501437590
 MonoBehaviour:
@@ -183,6 +183,14 @@ MonoBehaviour:
   walkSide:
   - {fileID: 21300000, guid: baab2a103ac74c87a0b7c68b2492b2ef, type: 3}
   - {fileID: 21300000, guid: 7183187828d64500bb13b88f4bd44cae, type: 3}
+  armoredFront: {fileID: 21300000, guid: 18cea199af4644ad82c23361b498fdc7, type: 3}
+  armoredBack: {fileID: 21300000, guid: c0fbcfd8ead14ce4a39e0aa00be7d22f, type: 3}
+  armoredLeft: {fileID: 21300000, guid: 2aeced7dc7bf4b9abfa0f2b1d0589b3c, type: 3}
+  armoredRight: {fileID: 21300000, guid: 63c885ec25574167bdb658e1e4342572, type: 3}
+  armoredWalkSide:
+  - {fileID: 21300000, guid: 87e2cf4325ad495a9630236be1c3cb6f, type: 3}
+  - {fileID: 21300000, guid: 47417e6b7c9b436ead8dcf34df587375, type: 3}
+  - {fileID: 21300000, guid: 39861e9aeb1442419156212af3123770, type: 3}
   bobAmount: 0.05
   bobSpeed: 12
 --- !u!114 &5078144624677139617

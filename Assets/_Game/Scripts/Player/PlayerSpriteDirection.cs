@@ -14,6 +14,23 @@ namespace DungeonCrawler.Player
         [Tooltip("walk cycle drawn facing left. walking right uses the same frames flipped")]
         [SerializeField] private Sprite[] walkSide;
 
+        [Header("Leather armor")]
+        [SerializeField] private Sprite armoredFront;
+        [SerializeField] private Sprite armoredBack;
+        [SerializeField] private Sprite armoredLeft;
+        [SerializeField] private Sprite armoredRight;
+        [SerializeField] private Sprite[] armoredWalkSide;
+
+        // switches every sprite over to the armored set. PlayerArmor turns this on
+        public bool Armored { get; set; }
+
+        // what the character looks like from the front right now, for the inventory portrait
+        public Sprite FrontSprite => Pick(front, armoredFront);
+
+        // the armored version when armor is on and that sprite exists, otherwise the normal one
+        private Sprite Pick(Sprite normal, Sprite armored) => Armored && armored != null ? armored : normal;
+        private Sprite[] WalkFrames => Armored && armoredWalkSide != null && armoredWalkSide.Length > 0 ? armoredWalkSide : walkSide;
+
         [SerializeField, Min(0f)] private float bobAmount = 0.05f;
         [SerializeField, Min(0f)] private float bobSpeed = 12f;
 
@@ -39,17 +56,18 @@ namespace DungeonCrawler.Player
             Sprite pick;
             bool flip = false;
             bool side = Mathf.Abs(dir.x) >= Mathf.Abs(dir.y);
-            if (side && moving && walkSide != null && walkSide.Length > 0)
+            var walk = WalkFrames;
+            if (side && moving && walk != null && walk.Length > 0)
             {
                 // one frame per step, synced with the bob so the feet land when the body dips
                 int step = Mathf.FloorToInt(bobTime / Mathf.PI);
-                pick = walkSide[step % walkSide.Length];
+                pick = walk[step % walk.Length];
                 flip = dir.x > 0f;
             }
             else if (side)
-                pick = dir.x < 0f ? left : right;
+                pick = dir.x < 0f ? Pick(left, armoredLeft) : Pick(right, armoredRight);
             else
-                pick = dir.y > 0f ? back : front;
+                pick = dir.y > 0f ? Pick(back, armoredBack) : Pick(front, armoredFront);
 
             if (pick != null && target.sprite != pick) target.sprite = pick;
             target.flipX = flip;

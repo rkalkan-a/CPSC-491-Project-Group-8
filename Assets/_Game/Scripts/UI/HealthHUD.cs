@@ -1,12 +1,14 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DungeonCrawler.Combat;
 using DungeonCrawler.Core;
+using DungeonCrawler.Player;
 
 namespace DungeonCrawler.UI
 {
-    // hearts in the top left. 1 heart = 2 hp so you can have half hearts like isaac
+    // hearts in the top left. 1 heart = Health.HpPerHeart hp, so a heart can be a quarter, half or three quarters full
     public class HealthHUD : MonoBehaviour
     {
         [SerializeField] private RectTransform heartsRoot;
@@ -22,11 +24,16 @@ namespace DungeonCrawler.UI
         private Health tracked;
         private Sprite fullHeart;
         private Sprite emptyHeart;
+        private Sprite armorFullHeart;  // hearts added by armor are drawn yellow so they stand out
+        private Sprite armorEmptyHeart;
+        private int shownHearts;
 
         private void Awake()
         {
             fullHeart = PixelUI.Heart(fullColor, 0.55f);
             emptyHeart = PixelUI.Heart(emptyColor, 0.12f);
+            armorFullHeart = PixelUI.Heart(PlayerArmor.HeartColor, 0.55f);
+            armorEmptyHeart = PixelUI.Heart(new Color(0.34f, 0.26f, 0.06f), 0.12f);
 
             if (heartsRoot != null)
             {
@@ -85,8 +92,12 @@ namespace DungeonCrawler.UI
         {
             if (heartsRoot == null) return;
 
-            int heartCount = Mathf.CeilToInt(max / 2f);
+            int heartCount = Mathf.CeilToInt(max / (float)Health.HpPerHeart);
             while (heartObjects.Count < heartCount) MakeHeart(heartObjects.Count);
+
+            // hearts that come from armor sit at the end of the row and are drawn yellow
+            var armor = tracked != null ? tracked.GetComponent<PlayerArmor>() : null;
+            int armorHearts = armor != null ? armor.ExtraHearts : 0;
 
             for (int i = 0; i < heartObjects.Count; i++)
             {
@@ -94,9 +105,30 @@ namespace DungeonCrawler.UI
                 heartObjects[i].SetActive(show);
                 if (!show) continue;
 
-                int hpInThisHeart = Mathf.Clamp(current - i * 2, 0, 2);
-                heartFills[i].fillAmount = hpInThisHeart * 0.5f;
+                bool fromArmor = i >= heartCount - armorHearts;
+                heartObjects[i].GetComponent<Image>().sprite = fromArmor ? armorEmptyHeart : emptyHeart;
+                heartFills[i].sprite = fromArmor ? armorFullHeart : fullHeart;
+
+                int hpInThisHeart = Mathf.Clamp(current - i * Health.HpPerHeart, 0, Health.HpPerHeart);
+                heartFills[i].fillAmount = hpInThisHeart / (float)Health.HpPerHeart;
+
+                // a heart that wasn't there a moment ago pops in so the player notices it
+                if (shownHearts > 0 && i >= shownHearts && isActiveAndEnabled) StartCoroutine(Pop(heartObjects[i].transform));
             }
+            shownHearts = heartCount;
+        }
+
+        private static IEnumerator Pop(Transform heart)
+        {
+            const float duration = 0.45f;
+            for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+            {
+                if (heart == null) yield break;
+                float k = t / duration;
+                heart.localScale = Vector3.one * (1f + 0.7f * Mathf.Sin(k * Mathf.PI) * (1f - k)); // swells, then settles
+                yield return null;
+            }
+            if (heart != null) heart.localScale = Vector3.one;
         }
 
         private void MakeHeart(int index)
@@ -114,7 +146,7 @@ namespace DungeonCrawler.UI
             bgImage.sprite = emptyHeart;
             bgImage.raycastTarget = false;
 
-            // full heart drawn on top, filled left to right so 1 hp shows as half a heart
+            // full heart drawn on top, filled left to right so a partly lost heart shows partly filled
             var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
             fill.transform.SetParent(bg.transform, false);
             var fillRect = (RectTransform)fill.transform;

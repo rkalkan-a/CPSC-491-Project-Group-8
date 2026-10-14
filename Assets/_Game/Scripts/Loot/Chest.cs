@@ -13,9 +13,11 @@ namespace DungeonCrawler.Loot
         [SerializeField] private Sprite closedSprite;
         [SerializeField] private Sprite openSprite;
         [SerializeField] private AudioClip openSound;
+        [SerializeField] private bool containsSword = true; // the first chest is where the player gets their sword
 
         public bool IsOpen { get; private set; }
         public SpriteRenderer Sprite => sprite;
+        public bool ContainsSword => containsSword;
 
         private void Awake()
         {
@@ -46,6 +48,18 @@ namespace DungeonCrawler.Loot
 
             if (ChestPanel.Instance != null)
                 ChestPanel.Instance.Show(this, player);
+        }
+
+        // gives the sword to the player if it's still in here. returns false if there was nothing to take
+        public bool TakeSword(PlayerController player)
+        {
+            if (!containsSword || player == null) return false;
+            var sword = player.GetComponent<PlayerSword>();
+            if (sword == null) return false;
+
+            containsSword = false;
+            sword.Equip();
+            return true;
         }
     }
 }
