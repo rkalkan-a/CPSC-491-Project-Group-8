@@ -198,6 +198,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Runtime::PlayerAudio
   hurtSound: {fileID: 8300000, guid: 186464bc437f82146a64bac6cded9217, type: 3}
+  swordSwingSound: {fileID: 8300000, guid: bed8709a35a568440a5154d3d6af8fc7, type: 3}
 --- !u!1 &6578517884657519725
 GameObject:
   m_ObjectHideFlags: 0

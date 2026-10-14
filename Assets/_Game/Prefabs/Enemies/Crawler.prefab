@@ -108,6 +108,7 @@ GameObject:
   - component: {fileID: 3624714384693946495}
   - component: {fileID: 4571936941025780234}
   - component: {fileID: 7445723475076298504}
+  - component: {fileID: 3226826927737153839}
   m_Layer: 0
   m_Name: Crawler
   m_TagString: Untagged
@@ -271,3 +272,17 @@ MonoBehaviour:
   aggroRange: 7
   wanderSpeed: 1.2
   wanderChangeTime: 1.5
+--- !u!114 &3226826927737153839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5830404812837078134}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 217c475a6c6a366468e55d14c511bfaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Runtime::DungeonCrawler.Enemies.EnemyAudio
+  hurtSound: {fileID: 8300000, guid: bcfe85ad3daaf5648be93868802abfe8, type: 3}
+  deathSound: {fileID: 8300000, guid: 022857e96e5f9d14592a99615f865eb5, type: 3}
