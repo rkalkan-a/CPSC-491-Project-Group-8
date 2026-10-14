@@ -34,7 +34,8 @@ namespace DungeonCrawler.EditorTools
         private const float DungeonPixelsPerUnit = 64f; // 1536px room -> 24 units wide, fits on screen in one go
         private const string MazeMapPath = "Assets/_Game/Art/Maps/dungeon_maze_03.png";
         private const string MazeCollidersPath = "Assets/_Game/Art/Maps/dungeon_maze_03_colliders.json";
-        private const float MazePixelsPerUnit = 20f; // 1536px maze -> about 77 units wide, so the corridors fit the player
+        private const float MazePixelsPerUnit = 20f; // layout pixels (the colliders json is 1536 wide) -> about 77 units wide, so the corridors fit the player
+        private const float MazeArtScale = 3f;       // the maze art is drawn at 3x the layout (4608px), so it's as sharp as the first room
         // roomy spots spread through the maze, picked from its walkable area. image pixels
         private static readonly Vector2[] MazeEnemySpawns =
         {
@@ -288,7 +289,7 @@ namespace DungeonCrawler.EditorTools
 
             Door west = FindDoor(room2, DoorSide.West) ?? AddDoor(room2, DoorSide.West);
 
-            float mazeW = sprite.texture.width / MazePixelsPerUnit;
+            float mazeW = sprite.bounds.size.x;
             Vector2 center = new Vector2(room2.Center.x - room2.Size.x * 0.5f - RoomGap - mazeW * 0.5f, room2.Center.y);
             Room maze = BuildMapRoom(room2.transform.parent, "Maze_03", MazeMapPath, MazeCollidersPath, MazePixelsPerUnit, center, false);
 
@@ -355,11 +356,42 @@ namespace DungeonCrawler.EditorTools
                 }
             }
 
-            ImportAsPixelSprite(MazeMapPath, MazePixelsPerUnit);
+            ImportAsPixelSprite(MazeMapPath, MazePixelsPerUnit * MazeArtScale);
             dungeon.RefreshChildren();
             maze.RefreshChildren();
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Debug.Log("Maze_03 now follows Dungeon_01, leather armor is in a chest. Save the scene (Cmd+S).");
+        }
+
+        // chain mail sits in a glowing chest in the maze's exit room, so it's the reward for getting through.
+        // maze enemies stop dropping it
+        [MenuItem("Tools/Dungeon/Advanced (changes the level)/Add Chain Mail Chest To Maze", priority = 2)]
+        public static void AddChainMailChestToMaze()
+        {
+            Room maze = null;
+            foreach (var r in Object.FindObjectsByType<Room>(FindObjectsSortMode.None))
+                if (r.name == "Maze_03") maze = r;
+            if (maze == null) { Debug.LogWarning("No Maze_03 in the open scene."); return; }
+
+            var so = new SerializedObject(maze);
+            so.FindProperty("armorLoot").enumValueIndex = (int)ArmorTier.None;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (var c in maze.GetComponentsInChildren<Chest>(true))
+                if (c.Armor == ArmorTier.ChainMail) { Debug.Log("The maze already has its chain mail chest."); return; }
+
+            // left of the red carpet, just before the exit arch. layout pixels
+            Chest chest = MakeChest(maze.transform, MapPixelToWorld(maze, MazePixelsPerUnit, 720f, 170f), null);
+            if (chest == null) return;
+            chest.name = "Chest_ChainMail";
+            var cso = new SerializedObject(chest);
+            cso.FindProperty("containsSword").boolValue = false;
+            cso.FindProperty("armor").enumValueIndex = (int)ArmorTier.ChainMail;
+            cso.ApplyModifiedPropertiesWithoutUndo();
+
+            maze.RefreshChildren();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("Chain mail chest added to the maze's exit room. Save the scene (Cmd+S).");
         }
 
         [MenuItem("Tools/Dungeon/Advanced (changes the level)/Update Player Prefab", priority = 3)]
@@ -478,9 +510,13 @@ namespace DungeonCrawler.EditorTools
         }
 
         // colliders json is a list of polygon outlines in image pixels. outer shapes block, shapes inside them are holes (the walkable bits)
+        // ppu is in layout pixels (what the colliders json and the pixel positions use). art drawn at a higher
+        // resolution than its layout is imported with a matching higher ppu so it covers the same area
+        private static float ArtScale(string path) => path == MazeMapPath ? MazeArtScale : 1f;
+
         private static Sprite LoadMapSprite(string path, float ppu)
         {
-            ImportAsPixelSprite(path, ppu);
+            ImportAsPixelSprite(path, ppu * ArtScale(path));
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
@@ -490,8 +526,8 @@ namespace DungeonCrawler.EditorTools
             var sprite = LoadMapSprite(pngPath, ppu);
             if (sprite == null) return null;
 
-            float w = sprite.texture.width / ppu;
-            float h = sprite.texture.height / ppu;
+            float w = sprite.texture.width / (ppu * ArtScale(pngPath));
+            float h = sprite.texture.height / (ppu * ArtScale(pngPath));
 
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -925,7 +961,7 @@ namespace DungeonCrawler.EditorTools
                 || importer.mipmapEnabled
                 || importer.textureCompression != TextureImporterCompression.Uncompressed
                 || !importer.alphaIsTransparency
-                || importer.maxTextureSize < 2048;
+                || importer.maxTextureSize < GameArtImporter.MaxSizeFor(importer);
             if (!dirty) return;
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
@@ -934,7 +970,7 @@ namespace DungeonCrawler.EditorTools
             importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.alphaIsTransparency = true;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = GameArtImporter.MaxSizeFor(importer);
             importer.SaveAndReimport();
         }
 

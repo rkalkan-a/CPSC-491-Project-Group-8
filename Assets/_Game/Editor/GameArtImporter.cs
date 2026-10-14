@@ -21,7 +21,14 @@ namespace DungeonCrawler.EditorTools
             importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.alphaIsTransparency = true;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = assetPath.Contains("/Maps/") ? MaxSizeFor(importer) : 2048;
+        }
+
+        // big maps keep their full resolution instead of being shrunk to 2048
+        internal static int MaxSizeFor(TextureImporter importer)
+        {
+            importer.GetSourceTextureWidthAndHeight(out int w, out int h);
+            return Mathf.Clamp(Mathf.NextPowerOfTwo(Mathf.Max(w, h)), 2048, 8192);
         }
 
         private static float PixelsPerUnitFor(string path)
@@ -29,7 +36,7 @@ namespace DungeonCrawler.EditorTools
             if (path.Contains("/Placeholders/")) return 32f;
             if (path.Contains("/Maps/"))
             {
-                if (path.Contains("maze")) return 20f; // the maze is about 77 units wide so the corridors fit the player
+                if (path.Contains("maze")) return 60f; // 4608px maze -> about 77 units wide so the corridors fit the player, as sharp as the first room
                 return path.Contains("dungeon") ? 64f : 48f; // dungeon rooms are 24 units wide, the forest is 32
             }
             if (path.Contains("/Player/")) return 800f;
