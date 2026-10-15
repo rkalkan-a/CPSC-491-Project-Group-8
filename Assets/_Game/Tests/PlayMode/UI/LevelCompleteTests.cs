@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using DungeonCrawler.Core;
 using DungeonCrawler.Player;
@@ -20,17 +21,29 @@ namespace DungeonCrawler.Tests
     {
         private readonly List<GameObject> spawned = new List<GameObject>();
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
             Time.timeScale = 1f;
             RunStats.Reset();
+
+            // tests that run before these can leave Level_01 loaded, and its doors sit right where the test player
+            // stands. walking through one starts a room transition that hands control back. start in an empty scene
+            Scene empty = SceneManager.CreateScene("LevelCompleteTests_" + System.Guid.NewGuid().ToString("N"));
+            SceneManager.SetActiveScene(empty);
+            for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                Scene other = SceneManager.GetSceneAt(i);
+                if (other != empty && other.isLoaded) yield return SceneManager.UnloadSceneAsync(other);
+            }
+            yield return new WaitForFixedUpdate();
         }
 
         [TearDown]
         public void TearDown()
         {
-            if (LevelCompleteScreen.Instance != null) Object.Destroy(LevelCompleteScreen.Instance.gameObject);
+            // right away, not at the end of the frame, or the next test can start with this one's screen still up
+            if (LevelCompleteScreen.Instance != null) Object.DestroyImmediate(LevelCompleteScreen.Instance.gameObject);
             foreach (var go in spawned)
                 if (go != null) Object.Destroy(go);
             spawned.Clear();
