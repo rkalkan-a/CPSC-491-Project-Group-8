@@ -2072,6 +2072,7 @@ MonoBehaviour:
   isLocked: 0
   requireWalkIn: 0
   walkInDepth: 0.2
+  isLevelExit: 0
 --- !u!61 &1108179771
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2555,6 +2556,7 @@ MonoBehaviour:
   isLocked: 0
   requireWalkIn: 1
   walkInDepth: 0.2
+  isLevelExit: 0
 --- !u!61 &1329699504
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5110,6 +5112,7 @@ MonoBehaviour:
   isLocked: 0
   requireWalkIn: 0
   walkInDepth: 0.2
+  isLevelExit: 0
 --- !u!61 &1908859093
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5578,6 +5581,7 @@ MonoBehaviour:
   isLocked: 0
   requireWalkIn: 0
   walkInDepth: 0.2
+  isLevelExit: 0
 --- !u!61 &2064346708
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5691,6 +5695,7 @@ MonoBehaviour:
   isLocked: 0
   requireWalkIn: 0
   walkInDepth: 0.2
+  isLevelExit: 1
 --- !u!61 &2109567947
 BoxCollider2D:
   m_ObjectHideFlags: 0

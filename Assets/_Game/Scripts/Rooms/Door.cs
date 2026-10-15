@@ -1,5 +1,6 @@
 using UnityEngine;
 using DungeonCrawler.Player;
+using DungeonCrawler.UI;
 
 namespace DungeonCrawler.Rooms
 {
@@ -17,10 +18,13 @@ namespace DungeonCrawler.Rooms
         // off = travel as soon as you touch the door. on = you have to walk this far past the door's center first (like into a tunnel)
         [SerializeField] private bool requireWalkIn = false;
         [SerializeField, Min(0f)] private float walkInDepth = 0.2f;
+        // the way out of the last level. walking in shows the level complete screen instead of changing rooms
+        [SerializeField] private bool isLevelExit = false;
 
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
         public bool IsConnected => targetDoor != null;
+        public bool IsLevelExit { get => isLevelExit; set => isLevelExit = value; }
         public bool IsLocked
         {
             get => isLocked;
@@ -89,7 +93,14 @@ namespace DungeonCrawler.Rooms
 
         private void TryTravel(Collider2D other)
         {
-            if (isLocked || targetDoor == null) return;
+            if (isLocked) return;
+            if (isLevelExit)
+            {
+                var exiting = other.GetComponentInParent<PlayerController>();
+                if (exiting != null) LevelCompleteScreen.Show(exiting);
+                return;
+            }
+            if (targetDoor == null) return;
             var player = other.GetComponentInParent<PlayerController>();
             if (player == null) return;
 

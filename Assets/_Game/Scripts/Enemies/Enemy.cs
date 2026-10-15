@@ -114,6 +114,7 @@ namespace DungeonCrawler.Enemies
             if (bleed != null && GameSettings.Gore != GameSettings.GoreOff)
                 bleed.Splat(transform.position, GameSettings.Gore == GameSettings.GoreFull ? 3 : 1);
 
+            RunStats.EnemyDefeated();
             Died?.Invoke(this);
             Destroy(gameObject);
         }

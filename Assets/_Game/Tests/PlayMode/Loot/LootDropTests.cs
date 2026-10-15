@@ -49,8 +49,10 @@ namespace DungeonCrawler.Tests
 
             Assert.IsNotNull(heart, "a roll under the drop chance should drop a heart");
             Assert.IsNotNull(heart.GetComponent<HealthPickup>());
+            // the heart bobs up and down a little (PickupBob), so allow for that. it used to fail now and then
+            // when the check landed mid-bob
             Assert.AreEqual(3f, heart.transform.position.x, 0.01f);
-            Assert.AreEqual(2f, heart.transform.position.y, 0.01f);
+            Assert.AreEqual(2f, heart.transform.position.y, 0.1f);
         }
 
         [UnityTest]
