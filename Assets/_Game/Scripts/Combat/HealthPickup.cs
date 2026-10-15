@@ -1,5 +1,6 @@
 using UnityEngine;
 using DungeonCrawler.Player;
+using DungeonCrawler.Audio;
 
 namespace DungeonCrawler.Combat
 {
@@ -29,6 +30,7 @@ namespace DungeonCrawler.Combat
             if (onlyIfHurt && health.Current >= health.Max) return false;
 
             health.Heal(healAmount);
+            player.GetComponent<PlayerAudio>()?.PlayHeal();
             Destroy(gameObject);
             return true;
         }

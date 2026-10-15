@@ -1,6 +1,7 @@
 using UnityEngine;
 using DungeonCrawler.Combat;
 using DungeonCrawler.UI;
+using DungeonCrawler.Audio;
 
 namespace DungeonCrawler.Player
 {
@@ -52,6 +53,7 @@ namespace DungeonCrawler.Player
         public bool Equip(ArmorTier tier)
         {
             if (tier <= Tier) return false;
+            GetComponent<PlayerAudio>()?.PlayArmorEquip();
 
             int addedHearts = HeartsFor(tier) - HeartsFor(Tier);
             Tier = tier; // set before the health changes, so the hud already knows the new hearts are armor hearts

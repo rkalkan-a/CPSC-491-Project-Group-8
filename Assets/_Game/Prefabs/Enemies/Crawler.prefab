@@ -240,6 +240,7 @@ MonoBehaviour:
   bloodColor: {r: 0.34, g: 0.02, b: 0.04, a: 0.8}
   spread: 0.35
   lifetime: 10
+  fadeTime: 2.5
 --- !u!114 &4571936941025780234
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284,5 +285,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 217c475a6c6a366468e55d14c511bfaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Runtime::DungeonCrawler.Enemies.EnemyAudio
-  hurtSound: {fileID: 8300000, guid: bcfe85ad3daaf5648be93868802abfe8, type: 3}
-  deathSound: {fileID: 8300000, guid: 022857e96e5f9d14592a99615f865eb5, type: 3}
+  hurtSounds: []
+  deathSounds:
+  - {fileID: 8300000, guid: 8d1c85e1912ea124098e188401507836, type: 3}
