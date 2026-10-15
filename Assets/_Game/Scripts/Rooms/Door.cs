@@ -47,6 +47,11 @@ namespace DungeonCrawler.Rooms
 
         public Vector2 ArrivalPosition => (Vector2)transform.position + InwardDirection * arrivalDistance;
 
+        private void Start()
+        {
+            RefreshVisualState();
+        }
+        
         private void Reset()
         {
             var col = GetComponent<Collider2D>();
@@ -116,7 +121,20 @@ namespace DungeonCrawler.Rooms
             
             RoomManager.Instance?.TravelThrough(this, player);
         }
+        private void RefreshVisualState()
+        {
+            if (doorRenderer == null)
+                doorRenderer = GetComponent<SpriteRenderer>();
 
+            bool connected = targetDoor != null;
+
+            if (doorRenderer != null)
+                doorRenderer.enabled = connected;
+
+            var col = GetComponent<Collider2D>();
+            if (col != null)
+                col.enabled = connected;
+        }
         public void Link(Door other)
         {
             targetDoor = other;
@@ -124,10 +142,10 @@ namespace DungeonCrawler.Rooms
             if (other != null)
             {
                 other.targetDoor = this;
-                other.UpdateDoorColor();
+                other.RefreshVisualState();
             }
 
-            UpdateDoorColor();
+            RefreshVisualState();
         }
 
         private void OnEnable()
