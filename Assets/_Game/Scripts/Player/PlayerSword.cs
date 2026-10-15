@@ -1,6 +1,7 @@
 using UnityEngine;
 using DungeonCrawler.Combat;
 using DungeonCrawler.UI;
+using DungeonCrawler.Audio;
 
 namespace DungeonCrawler.Player
 {
@@ -49,6 +50,8 @@ namespace DungeonCrawler.Player
         public void Equip()
         {
             bool isNew = !HasSword;
+            if (isNew)
+                GetComponent<PlayerAudio>()?.PlaySwordEquip();
             HasSword = true;
             melee.Armed = true;
 

@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using DungeonCrawler.Combat;
 using DungeonCrawler.Audio;
@@ -7,9 +8,12 @@ namespace DungeonCrawler.Player
     [RequireComponent(typeof(Health))]
     public class PlayerAudio : MonoBehaviour
     {
-        [Header("Sound Effects")]
-        [SerializeField] private AudioClip hurtSound;
-        [SerializeField] private AudioClip swordSwingSound;
+        [Header("Player Sound Effects")]
+        [SerializeField] private AudioClip[] hurtSounds;
+        [SerializeField] private AudioClip[] swordSwingSounds;
+        [SerializeField] private AudioClip[] swordEquipSounds;
+        [SerializeField] private AudioClip[] armorEquipSounds;
+        [SerializeField] private AudioClip[] healSounds;
 
         private Health health;
         private PlayerMelee playerMelee;
@@ -42,11 +46,22 @@ namespace DungeonCrawler.Player
             }
         }
 
+        // Randomly selects and plays a sound from an array.
+        private void PlayRandomSound(AudioClip[] sounds)
+        {
+            if (sounds == null || sounds.Length == 0)
+                return;
+
+            int index = Random.Range(0, sounds.Length);
+
+            SFXManager.Instance?.PlaySFX(sounds[index]);
+        }
+
         private void OnHealthChanged(int current, int max)
         {
             if (current < lastHealth)
             {
-                SFXManager.Instance?.PlaySFX(hurtSound);
+                PlayRandomSound(hurtSounds);
             }
 
             lastHealth = current;
@@ -54,7 +69,22 @@ namespace DungeonCrawler.Player
 
         private void OnSwordSwing(Vector2 direction)
         {
-            SFXManager.Instance?.PlaySFX(swordSwingSound);
+            PlayRandomSound(swordSwingSounds);
+        }
+
+        public void PlaySwordEquip()
+        {
+            PlayRandomSound(swordEquipSounds);
+        }
+
+        public void PlayArmorEquip()
+        {
+            PlayRandomSound(armorEquipSounds);
+        }
+
+        public void PlayHeal()
+        {
+            PlayRandomSound(healSounds);
         }
     }
 }

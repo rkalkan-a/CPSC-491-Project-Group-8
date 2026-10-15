@@ -240,6 +240,7 @@ MonoBehaviour:
   bloodColor: {r: 0.34, g: 0.02, b: 0.04, a: 0.8}
   spread: 0.35
   lifetime: 10
+  fadeTime: 2.5
 --- !u!114 &2093599819385891844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284,5 +285,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 217c475a6c6a366468e55d14c511bfaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Runtime::EnemyAudio
-  hurtSound: {fileID: 8300000, guid: feb1f6abec3e6fb489539c654e7b3e2d, type: 3}
-  deathSound: {fileID: 8300000, guid: 022857e96e5f9d14592a99615f865eb5, type: 3}
+  hurtSounds:
+  - {fileID: 8300000, guid: 278cbc252d3d3b0448bfa8432aa1d651, type: 3}
+  - {fileID: 8300000, guid: 8aeada2b576187d4bbd85948affdae77, type: 3}
+  deathSounds:
+  - {fileID: 8300000, guid: 022857e96e5f9d14592a99615f865eb5, type: 3}

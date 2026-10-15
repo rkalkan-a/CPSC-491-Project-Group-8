@@ -539,7 +539,7 @@ MonoBehaviour:
   sprite: {fileID: 861106952}
   closedSprite: {fileID: 21300000, guid: 569f2ba91f5634845b78b2a7072929b7, type: 3}
   openSprite: {fileID: 21300000, guid: c3eadab101a85404fbbbfc5479dd95d8, type: 3}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: b7b263082919eef449760f99e40746dc, type: 3}
   containsSword: 0
   armor: 2
 --- !u!61 &248100672
@@ -1658,7 +1658,7 @@ MonoBehaviour:
   sprite: {fileID: 1278821049}
   closedSprite: {fileID: 21300000, guid: 569f2ba91f5634845b78b2a7072929b7, type: 3}
   openSprite: {fileID: 21300000, guid: c3eadab101a85404fbbbfc5479dd95d8, type: 3}
-  openSound: {fileID: 0}
+  openSound: {fileID: 8300000, guid: a11bdc377da0ff14d8c888de524b92ac, type: 3}
   containsSword: 0
   armor: 1
 --- !u!61 &879281616
@@ -3208,6 +3208,22 @@ PrefabInstance:
     - target: {fileID: 539972300420805814, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 5078144624677139617, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
+      propertyPath: healSound
+      value: 
+      objectReference: {fileID: 8300000, guid: c0ca43277d1ccc546aa8618b03eaedd9, type: 3}
+    - target: {fileID: 5078144624677139617, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
+      propertyPath: armorEquipSound
+      value: 
+      objectReference: {fileID: 8300000, guid: e1ca858b084e5bd47ac8047d37ad7c4a, type: 3}
+    - target: {fileID: 5078144624677139617, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
+      propertyPath: swordEquipSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 551fa7e4b674d69429cbdc0a550a4a50, type: 3}
+    - target: {fileID: 5078144624677139617, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
+      propertyPath: swordSwingSounds.Array.size
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9022024452885806232, guid: 097a386984c5a4b1eb2fb6ac709287c1, type: 3}
       propertyPath: m_LocalPosition.x

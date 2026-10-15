@@ -163,6 +163,7 @@ MonoBehaviour:
   bloodColor: {r: 0.34, g: 0.02, b: 0.04, a: 0.8}
   spread: 0.35
   lifetime: 10
+  fadeTime: 2.5
 --- !u!114 &4955719312650526027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,8 +214,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06398154162db2347826aa1586838e01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Runtime::PlayerAudio
-  hurtSound: {fileID: 8300000, guid: 186464bc437f82146a64bac6cded9217, type: 3}
-  swordSwingSound: {fileID: 8300000, guid: bed8709a35a568440a5154d3d6af8fc7, type: 3}
+  hurtSounds:
+  - {fileID: 8300000, guid: 186464bc437f82146a64bac6cded9217, type: 3}
+  - {fileID: 8300000, guid: 6935c124546be1841890cf543fb7dd9e, type: 3}
+  - {fileID: 8300000, guid: 576cfdd2b624f334b9145d40dbbbec1f, type: 3}
+  swordSwingSounds:
+  - {fileID: 8300000, guid: bed8709a35a568440a5154d3d6af8fc7, type: 3}
+  swordEquipSounds:
+  - {fileID: 8300000, guid: 551fa7e4b674d69429cbdc0a550a4a50, type: 3}
+  armorEquipSounds:
+  - {fileID: 8300000, guid: e1ca858b084e5bd47ac8047d37ad7c4a, type: 3}
+  healSounds:
+  - {fileID: 8300000, guid: c0ca43277d1ccc546aa8618b03eaedd9, type: 3}
 --- !u!1 &6578517884657519725
 GameObject:
   m_ObjectHideFlags: 0
