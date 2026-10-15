@@ -14,6 +14,7 @@ namespace DungeonCrawler.Rooms
         [SerializeField] private Door targetDoor;
         [SerializeField, Min(0.5f)] private float arrivalDistance = 1.5f; // how far into the room you land
         [SerializeField] private bool isLocked = false;
+        private bool combatLocked = false;
         // off = travel as soon as you touch the door. on = you have to walk this far past the door's center first (like into a tunnel)
         [SerializeField] private bool requireWalkIn = false;
         [SerializeField, Min(0f)] private float walkInDepth = 0.2f;
@@ -23,12 +24,12 @@ namespace DungeonCrawler.Rooms
         public bool IsConnected => targetDoor != null;
         public bool IsLocked
         {
-            get => isLocked;
-            set
-            {
-                isLocked = value;
-                UpdateDoorColor();
-            }
+            get => isLocked || combatLocked;
+            set => isLocked = value;
+        }
+        public void SetCombatLocked(bool locked)
+        {
+            combatLocked = locked;
         }
         public Room Room => GetComponentInParent<Room>();
 
@@ -51,7 +52,7 @@ namespace DungeonCrawler.Rooms
         {
             RefreshVisualState();
         }
-        
+
         private void Reset()
         {
             var col = GetComponent<Collider2D>();
