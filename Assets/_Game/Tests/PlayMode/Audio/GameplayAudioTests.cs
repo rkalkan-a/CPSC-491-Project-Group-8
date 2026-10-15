@@ -68,7 +68,9 @@ namespace DungeonCrawler.Tests
             FieldInfo field = target.GetType().GetField(fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.IsNotNull(field, "Expected audio field was not found: " + fieldName);
-            field.SetValue(target, value);
+            // some scripts hold a list of sounds and pick one at random, give those a list of one
+            if (field.FieldType == typeof(AudioClip[])) field.SetValue(target, new[] { value });
+            else field.SetValue(target, value);
         }
 
         private Chest CreateChest()
@@ -101,7 +103,7 @@ namespace DungeonCrawler.Tests
             actorObject.SetActive(false);
             Health health = actorObject.AddComponent<Health>();
             PlayerAudio playerAudio = actorObject.AddComponent<PlayerAudio>();
-            AssignClip(playerAudio, "hurtSound", clip);
+            AssignClip(playerAudio, "hurtSounds", clip); // PlayerAudio picks from a list of hurt sounds since PR #54
             actorObject.SetActive(true);
             yield return null;
 

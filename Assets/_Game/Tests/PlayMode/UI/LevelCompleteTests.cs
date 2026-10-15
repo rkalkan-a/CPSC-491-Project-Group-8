@@ -42,8 +42,10 @@ namespace DungeonCrawler.Tests
         {
             var player = SpawnPlayer(new Vector2(0f, 0f));
             SpawnDoor(new Vector2(0f, 0f), isExit: true);
-            // plain frames, not physics steps: once the screen pauses the game there are no more physics steps to wait for
-            for (int i = 0; i < 30 && !LevelCompleteScreen.IsShowing; i++) yield return null;
+            // wait on real time, not physics steps: once the screen pauses the game there are no more physics steps
+            // to wait for, and plain frames can run faster than one physics step
+            float giveUp = Time.realtimeSinceStartup + 1f;
+            while (!LevelCompleteScreen.IsShowing && Time.realtimeSinceStartup < giveUp) yield return null;
 
             Assert.IsTrue(LevelCompleteScreen.IsShowing, "touching the exit should show the level complete screen");
             Assert.IsFalse(player.InputEnabled, "the player shouldn't be able to move behind the screen");
