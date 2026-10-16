@@ -34,12 +34,16 @@ namespace DungeonCrawler.Tests
 
             // tests that run before these (menus, music) leave Level_01 loaded, and its walls sit right
             // where these shots are fired. start every test in an empty scene of its own
+            // Keep Unity's runner alive; unloading its scene stops this setup coroutine.
+            var runner = GameObject.Find("Code-based tests runner");
+            Scene runnerScene = runner != null ? runner.scene : default;
             Scene empty = SceneManager.CreateScene("ProjectileTests_" + System.Guid.NewGuid().ToString("N"));
             SceneManager.SetActiveScene(empty);
             for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
             {
                 Scene other = SceneManager.GetSceneAt(i);
-                if (other != empty && other.isLoaded) yield return SceneManager.UnloadSceneAsync(other);
+                if (other != empty && other != runnerScene && other.isLoaded)
+                    yield return SceneManager.UnloadSceneAsync(other);
             }
             yield return new WaitForFixedUpdate(); // let physics drop the unloaded colliders
         }

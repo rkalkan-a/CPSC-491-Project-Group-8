@@ -63,14 +63,13 @@ namespace DungeonCrawler.Tests
             yield return null;
         }
 
-        private static void AssignClip(Component target, string fieldName, AudioClip value)
+        private static void AssignAudioField<T>(Component target, string fieldName, T value)
         {
             FieldInfo field = target.GetType().GetField(fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.IsNotNull(field, "Expected audio field was not found: " + fieldName);
-            // some scripts hold a list of sounds and pick one at random, give those a list of one
-            if (field.FieldType == typeof(AudioClip[])) field.SetValue(target, new[] { value });
-            else field.SetValue(target, value);
+            // Callers supply the field's exact type, including AudioClip[] for hurt sounds.
+            field.SetValue(target, value);
         }
 
         private Chest CreateChest()
@@ -79,7 +78,7 @@ namespace DungeonCrawler.Tests
             actorObject.SetActive(false);
             actorObject.AddComponent<BoxCollider2D>();
             Chest chest = actorObject.AddComponent<Chest>();
-            AssignClip(chest, "openSound", clip);
+            AssignAudioField(chest, "openSound", clip);
             actorObject.SetActive(true);
             return chest;
         }
@@ -103,7 +102,8 @@ namespace DungeonCrawler.Tests
             actorObject.SetActive(false);
             Health health = actorObject.AddComponent<Health>();
             PlayerAudio playerAudio = actorObject.AddComponent<PlayerAudio>();
-            AssignClip(playerAudio, "hurtSounds", clip); // PlayerAudio picks from a list of hurt sounds since PR #54
+            // One clip keeps the randomized playback selection deterministic.
+            AssignAudioField(playerAudio, "hurtSounds", new[] { clip });
             actorObject.SetActive(true);
             yield return null;
 

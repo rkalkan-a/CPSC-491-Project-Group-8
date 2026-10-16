@@ -45,14 +45,14 @@ namespace DungeonCrawler.Tests
             dropper.DropChance = 0.35f;
             yield return null;
 
+            // Enemy movement/physics may have advanced during the setup frame.
+            Vector3 dropPosition = dropper.transform.position;
             var heart = dropper.TryDrop(0.2f);
 
             Assert.IsNotNull(heart, "a roll under the drop chance should drop a heart");
             Assert.IsNotNull(heart.GetComponent<HealthPickup>());
-            // the heart bobs up and down a little (PickupBob), so allow for that. it used to fail now and then
-            // when the check landed mid-bob
-            Assert.AreEqual(3f, heart.transform.position.x, 0.01f);
-            Assert.AreEqual(2f, heart.transform.position.y, 0.1f);
+            Assert.AreEqual(dropPosition.x, heart.transform.position.x, 0.01f);
+            Assert.AreEqual(dropPosition.y, heart.transform.position.y, 0.01f);
         }
 
         [UnityTest]
