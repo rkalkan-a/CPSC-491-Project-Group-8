@@ -63,7 +63,7 @@ namespace DungeonCrawler.Tests
             yield return null;
         }
 
-        private static void AssignClip(Component target, string fieldName, AudioClip value)
+        private static void AssignAudioField<T>(Component target, string fieldName, T value)
         {
             FieldInfo field = target.GetType().GetField(fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
@@ -77,7 +77,7 @@ namespace DungeonCrawler.Tests
             actorObject.SetActive(false);
             actorObject.AddComponent<BoxCollider2D>();
             Chest chest = actorObject.AddComponent<Chest>();
-            AssignClip(chest, "openSound", clip);
+            AssignAudioField(chest, "openSound", clip);
             actorObject.SetActive(true);
             return chest;
         }
@@ -101,7 +101,8 @@ namespace DungeonCrawler.Tests
             actorObject.SetActive(false);
             Health health = actorObject.AddComponent<Health>();
             PlayerAudio playerAudio = actorObject.AddComponent<PlayerAudio>();
-            AssignClip(playerAudio, "hurtSound", clip);
+            // One clip keeps the randomized playback selection deterministic.
+            AssignAudioField(playerAudio, "hurtSounds", new[] { clip });
             actorObject.SetActive(true);
             yield return null;
 
