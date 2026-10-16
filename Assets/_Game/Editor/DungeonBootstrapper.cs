@@ -301,7 +301,8 @@ namespace DungeonCrawler.EditorTools
             entrance.Link(north);
             EditorUtility.SetDirty(entrance);
             EditorUtility.SetDirty(north);
-            AddMapDoor(level, DoorSide.North, Level3PixelsPerUnit, 835f, 70f, new Vector2(1.4f, 1.0f), 2.2f);
+            Door exit = AddMapDoor(level, DoorSide.North, Level3PixelsPerUnit, 835f, 70f, new Vector2(1.4f, 1.0f), 2.2f);
+            exit.IsLevelExit = true; // the end of the game for now, shows the level complete screen
 
             foreach (var p in Level3EnemySpawns)
                 AddEnemySpawn(level, MapPixelToWorld(level, Level3PixelsPerUnit, p.x, p.y));
