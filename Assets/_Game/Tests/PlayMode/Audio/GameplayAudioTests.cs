@@ -68,7 +68,9 @@ namespace DungeonCrawler.Tests
             FieldInfo field = target.GetType().GetField(fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.IsNotNull(field, "Expected audio field was not found: " + fieldName);
-            field.SetValue(target, value);
+            // some scripts hold a list of sounds and pick one at random, give those a list of one
+            if (field.FieldType == typeof(AudioClip[])) field.SetValue(target, new[] { value });
+            else field.SetValue(target, value);
         }
 
         private Chest CreateChest()
