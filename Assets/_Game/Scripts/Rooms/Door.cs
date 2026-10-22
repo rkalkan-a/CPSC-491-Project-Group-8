@@ -138,7 +138,8 @@ namespace DungeonCrawler.Rooms
             if (doorRenderer == null)
                 doorRenderer = GetComponent<SpriteRenderer>();
 
-            bool connected = targetDoor != null;
+            // the level exit isn't linked to another door on purpose (it ends the run), but it still has to be usable
+            bool connected = targetDoor != null || isLevelExit;
 
             if (doorRenderer != null)
                 doorRenderer.enabled = connected;
