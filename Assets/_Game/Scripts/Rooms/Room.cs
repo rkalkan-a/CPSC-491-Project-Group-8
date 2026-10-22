@@ -28,6 +28,8 @@ namespace DungeonCrawler.Rooms
         private readonly List<EnemySpawnPoint> enemySpawns = new();
         private readonly List<Enemy> aliveEnemies = new();
         private bool spawnedEnemies;
+        private int remainingEnemies;
+        public int RemainingEnemies => remainingEnemies;
         private readonly List<Renderer> hiddenRenderers = new();
 
         public IReadOnlyList<Door> Doors => doors;
@@ -121,6 +123,29 @@ namespace DungeonCrawler.Rooms
 
             if (!spawnedEnemies) SpawnEnemies();
         }
+        public void BeginCombat(int enemyCount)
+        {
+            remainingEnemies = Mathf.Max(0, enemyCount);
+
+            if (remainingEnemies > 0)
+            {
+                SetDoorsLocked(true);
+            }
+            else
+            {
+                MarkCleared();
+            }
+        }
+        public void NotifyEnemyDefeated()
+        {
+            if (remainingEnemies <= 0)
+                return;
+
+            remainingEnemies--;
+
+            if (remainingEnemies == 0)
+                MarkCleared();
+        }
 
         private void SpawnEnemies()
         {
@@ -158,7 +183,11 @@ namespace DungeonCrawler.Rooms
 
         private void SetDoorsLocked(bool locked)
         {
-            foreach (var door in doors) door.SetLocked(locked);
+            foreach (var door in doors)
+            {
+                if (door.IsConnected)
+                    door.IsLocked = locked;
+            }
         }
 
         private void OnDrawGizmos()

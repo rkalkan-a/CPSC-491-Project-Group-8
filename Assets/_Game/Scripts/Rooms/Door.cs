@@ -15,6 +15,7 @@ namespace DungeonCrawler.Rooms
         [SerializeField] private Door targetDoor;
         [SerializeField, Min(0.5f)] private float arrivalDistance = 1.5f; // how far into the room you land
         [SerializeField] private bool isLocked = false;
+        private bool combatLocked = false;
         // off = travel as soon as you touch the door. on = you have to walk this far past the door's center first (like into a tunnel)
         [SerializeField] private bool requireWalkIn = false;
         [SerializeField, Min(0f)] private float walkInDepth = 0.2f;
@@ -27,12 +28,12 @@ namespace DungeonCrawler.Rooms
         public bool IsLevelExit { get => isLevelExit; set => isLevelExit = value; }
         public bool IsLocked
         {
-            get => isLocked;
-            set
-            {
-                isLocked = value;
-                UpdateDoorColor();
-            }
+            get => isLocked || combatLocked;
+            set => isLocked = value;
+        }
+        public void SetCombatLocked(bool locked)
+        {
+            combatLocked = locked;
         }
         public Room Room => GetComponentInParent<Room>();
 
@@ -50,6 +51,11 @@ namespace DungeonCrawler.Rooms
         };
 
         public Vector2 ArrivalPosition => (Vector2)transform.position + InwardDirection * arrivalDistance;
+
+        private void Start()
+        {
+            RefreshVisualState();
+        }
 
         private void Reset()
         {
@@ -127,7 +133,20 @@ namespace DungeonCrawler.Rooms
             
             RoomManager.Instance?.TravelThrough(this, player);
         }
+        private void RefreshVisualState()
+        {
+            if (doorRenderer == null)
+                doorRenderer = GetComponent<SpriteRenderer>();
 
+            bool connected = targetDoor != null;
+
+            if (doorRenderer != null)
+                doorRenderer.enabled = connected;
+
+            var col = GetComponent<Collider2D>();
+            if (col != null)
+                col.enabled = connected;
+        }
         public void Link(Door other)
         {
             targetDoor = other;
@@ -135,10 +154,10 @@ namespace DungeonCrawler.Rooms
             if (other != null)
             {
                 other.targetDoor = this;
-                other.UpdateDoorColor();
+                other.RefreshVisualState();
             }
 
-            UpdateDoorColor();
+            RefreshVisualState();
         }
 
         private void OnEnable()
