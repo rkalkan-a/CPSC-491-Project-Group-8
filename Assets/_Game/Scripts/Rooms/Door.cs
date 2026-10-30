@@ -63,17 +63,6 @@ namespace DungeonCrawler.Rooms
             if (col != null) col.isTrigger = true;
         }
 
-        private void UpdateDoorColor()
-        {
-            if (doorRenderer == null)
-                doorRenderer = GetComponent<SpriteRenderer>();
-
-            if (doorRenderer == null)
-                return;
-
-            doorRenderer.color = GetExpectedColor();
-        }
-
         private void Awake()
         {
             sprite = GetComponent<SpriteRenderer>();
@@ -138,13 +127,18 @@ namespace DungeonCrawler.Rooms
             if (doorRenderer == null)
                 doorRenderer = GetComponent<SpriteRenderer>();
 
-            // the level exit isn't linked to another door on purpose (it ends the run), but it still has to be usable
-            bool connected = targetDoor != null || isLevelExit;
+            bool connected = targetDoor != null;
 
             if (doorRenderer != null)
+            {
                 doorRenderer.enabled = connected;
 
-            var col = GetComponent<Collider2D>();
+                // Use the sprite's normal/original appearance.
+                doorRenderer.color = Color.white;
+            }
+
+            Collider2D col = GetComponent<Collider2D>();
+
             if (col != null)
                 col.enabled = connected;
         }
@@ -163,7 +157,7 @@ namespace DungeonCrawler.Rooms
 
         private void OnEnable()
         {
-            UpdateDoorColor();
+            RefreshVisualState();
         }
 
         private void OnDrawGizmos()
@@ -201,26 +195,6 @@ namespace DungeonCrawler.Rooms
                 );
             }
         }
-        private Color GetExpectedColor()
-        {
-            if (isLocked)
-                return Color.red;
 
-            if (targetDoor != null)
-                return Color.green;
-
-            return Color.yellow;
-        }
-
-        private void LateUpdate()
-        {
-            if (doorRenderer == null)
-                return;
-
-            Color expected = GetExpectedColor();
-
-            if (doorRenderer.color != expected)
-                doorRenderer.color = expected;
-        }
     }
 }
