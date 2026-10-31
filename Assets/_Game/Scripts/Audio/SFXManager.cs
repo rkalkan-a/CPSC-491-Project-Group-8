@@ -13,6 +13,14 @@ namespace DungeonCrawler.Audio
 
         private void Awake()
         {
+            // Automatically use the AudioSource on this GameObject
+            // if one was not assigned in the Inspector.
+            // Done first so it's set even on a duplicate that's about to be destroyed
+            if (sfxSource == null)
+            {
+                sfxSource = GetComponent<AudioSource>();
+            }
+
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -21,13 +29,6 @@ namespace DungeonCrawler.Audio
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
-
-            // Automatically use the AudioSource on this GameObject
-            // if one was not assigned in the Inspector.
-            if (sfxSource == null)
-            {
-                sfxSource = GetComponent<AudioSource>();
-            }
         }
 
         public void PlaySFX(AudioClip clip)
