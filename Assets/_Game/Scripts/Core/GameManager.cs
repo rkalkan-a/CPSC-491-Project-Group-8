@@ -61,7 +61,7 @@ namespace DungeonCrawler.Core
             PlayerSpawnPoint spawn = ResolveStartSpawn();
             if (spawn == null)
             {
-                Debug.LogError("No PlayerSpawnPoint in the scene", this);
+                DiagnosticLogger.Error("GameManager", "No PlayerSpawnPoint in the scene");
                 return;
             }
 
@@ -71,7 +71,7 @@ namespace DungeonCrawler.Core
             {
                 if (playerPrefab == null)
                 {
-                    Debug.LogError("No player prefab assigned and no player in scene", this);
+                    DiagnosticLogger.Error("GameManager", "No player prefab assigned and no player in scene");
                     return;
                 }
                 Player = Instantiate(playerPrefab, spawn.Position, Quaternion.identity);
@@ -140,7 +140,7 @@ namespace DungeonCrawler.Core
             Scene active = SceneManager.GetActiveScene();
             if (active.buildIndex < 0)
             {
-                Debug.LogError("Scene " + active.name + " isn't in build settings so it can't be reloaded", this);
+                DiagnosticLogger.Error("GameManager", "Scene " + active.name + " is not in build settings and cannot be reloaded");
                 return;
             }
             SceneManager.LoadScene(active.buildIndex);
