@@ -11,7 +11,7 @@ using DungeonCrawler.Enemies;
 
 namespace DungeonCrawler.Tests
 {
-    // Sprint 4: abnormal configuration and runtime recovery checks.
+    // Abnormal configuration and runtime recovery checks.
     public class SystemAnomalyTests
     {
         private readonly List<GameObject> objects = new List<GameObject>();
@@ -88,7 +88,6 @@ namespace DungeonCrawler.Tests
         [Test]
         public void Anomaly_MissingSfxSource_IsRecoveredFromRequiredComponent()
         {
-            // A pre-existing SFXManager in a loaded scene would own the singleton;
             // this test only verifies the local fallback reference.
             var obj = Track("SfxFallbackCheck");
             var source = obj.AddComponent<AudioSource>();
