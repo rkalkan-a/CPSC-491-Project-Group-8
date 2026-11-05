@@ -25,7 +25,15 @@ namespace DungeonCrawler.Rooms
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
         public bool IsConnected => targetDoor != null;
-        public bool IsLevelExit { get => isLevelExit; set => isLevelExit = value; }
+        public bool IsLevelExit
+        {
+            get => isLevelExit;
+            set
+            {
+                isLevelExit = value;
+                RefreshVisualState();
+            }
+        }
         public bool IsLocked
         {
             get => isLocked || combatLocked;
@@ -127,7 +135,9 @@ namespace DungeonCrawler.Rooms
             if (doorRenderer == null)
                 doorRenderer = GetComponent<SpriteRenderer>();
 
-            bool connected = targetDoor != null;
+            // the level exit isn't linked to another door on purpose (it ends the run), but it still has to be usable.
+            // LevelCompleteTests fails if this goes away
+            bool connected = targetDoor != null || isLevelExit;
 
             if (doorRenderer != null)
             {

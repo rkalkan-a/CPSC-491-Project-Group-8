@@ -10,16 +10,11 @@ on:
       - '.gitignore'
 
   # combat tests must also run while a PR is open, not just after it merges
+  # no paths-ignore here: "Run Unity tests" is a required check on main, and a required check
+  # has to report on every PR or the PR waits forever. docs-only PRs are handled by the changes
+  # job below, which skips the tests. GitHub counts a skipped job as passing
   pull_request:
     branches: [main]
-    # a documentation-only change cannot break the game, so don't spend ~20
-    # minutes of runner time pulling the Unity image to prove it.
-    # (repeated rather than shared - GitHub Actions does not support YAML anchors)
-    paths-ignore:
-      - '**.md'
-      - 'CICD/**'
-      - 'docs/**'
-      - '.gitignore'
 
   workflow_dispatch:
 
@@ -31,9 +26,42 @@ env:
   UNITY_VERSION: 6000.6.0f1
 
 jobs:
-  
+
+  changes:
+    name: Check what changed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+    steps:
+      - name: Is this PR docs only?
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # a documentation-only change cannot break the game, so don't spend ~20
+          # minutes of runner time pulling the Unity image to prove it.
+          # anything unexpected means run the tests
+          code=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if files=$(gh api --paginate "repos/${{ github.repository }}/pulls/$PR/files" --jq '.[].filename'); then
+              if [ -n "$files" ] && ! echo "$files" | grep -qvE '(\.md$|^CICD/|^docs/|^\.gitignore$)'; then
+                code=false
+              fi
+            fi
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "code changed: $code"
+
   test:
     name: Run Unity tests
+    needs: changes
+    # skipped only when the changes job says docs only. if that job itself fails, the tests still
+    # run, so a broken check can never let code through untested
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: jlumbroso/free-disk-space@v1.3.1
