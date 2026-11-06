@@ -27,6 +27,32 @@ env:
 
 jobs:
 
+  security_response:
+    name: Security incident response
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test response behavior
+        run: python -m unittest discover -s tests/security -v
+      - name: Scan source for configured credential patterns
+        run: python tools/security/scan_source.py --commit "$GITHUB_SHA" --output security-scan.json
+      - name: Contain flagged or unverifiable source
+        if: always()
+        run: python tools/security/respond.py --report security-scan.json --commit "$GITHUB_SHA" --evidence-dir security-evidence
+      - name: Preserve security response evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecurityResponse-${{ github.run_id }}-${{ github.run_attempt }}
+          path: security-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
   changes:
     name: Check what changed
     runs-on: ubuntu-latest
@@ -138,11 +164,11 @@ jobs:
 
   build:
     name: Build (${{ matrix.targetPlatform }})
-    needs: test
+    needs: [test, security_response]
 
     # PRs only need to pass tests.
     # Full builds run after code reaches main.
-    if: github.event_name != 'pull_request'
+    if: ${{ github.event_name != 'pull_request' && needs.security_response.result == 'success' }}
 
     runs-on: ubuntu-latest
 
