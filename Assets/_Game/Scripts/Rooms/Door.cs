@@ -25,7 +25,15 @@ namespace DungeonCrawler.Rooms
         public DoorSide Side => side;
         public Door TargetDoor => targetDoor;
         public bool IsConnected => targetDoor != null;
-        public bool IsLevelExit { get => isLevelExit; set => isLevelExit = value; }
+        public bool IsLevelExit
+        {
+            get => isLevelExit;
+            set
+            {
+                isLevelExit = value;
+                RefreshVisualState();
+            }
+        }
         public bool IsLocked
         {
             get => isLocked || combatLocked;
@@ -140,7 +148,7 @@ namespace DungeonCrawler.Rooms
             Collider2D col = GetComponent<Collider2D>();
 
             if (col != null)
-                col.enabled = connected;
+                col.enabled = connected || isLevelExit;
         }
         public void Link(Door other)
         {
