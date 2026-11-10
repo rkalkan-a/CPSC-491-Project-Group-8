@@ -150,7 +150,7 @@ namespace DungeonCrawler.Rooms
             Collider2D col = GetComponent<Collider2D>();
 
             if (col != null)
-                col.enabled = connected;
+                col.enabled = connected || isLevelExit;
         }
         public void Link(Door other)
         {
