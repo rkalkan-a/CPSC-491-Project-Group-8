@@ -9,14 +9,14 @@ namespace DungeonCrawler.Rooms
         [SerializeField] private List<Room> roomPrefabs = new();
 
         [SerializeField, Min(2)]
-        private int roomCount = 5;
+        private int roomCount = 20;
 
         [SerializeField]
         private Vector2 roomSpacing = new Vector2(20f, 13f);
 
         private readonly List<Room> generatedRooms = new();
         private readonly Dictionary<Vector2Int, Room> roomsByGridPosition = new();
-
+        private readonly Dictionary<Room, Vector2Int> gridPositionByRoom = new();
         private void Start()
         {
             Generate();
@@ -45,6 +45,7 @@ namespace DungeonCrawler.Rooms
         {
             generatedRooms.Clear();
             roomsByGridPosition.Clear();
+            gridPositionByRoom.Clear();
 
             if (startRoomPrefab == null)
             {
@@ -58,11 +59,11 @@ namespace DungeonCrawler.Rooms
                 return;
             }
 
-            Vector2Int currentGridPosition = Vector2Int.zero;
+            Vector2Int startGridPosition = Vector2Int.zero;
 
             Room firstRoom = Instantiate(
                 startRoomPrefab,
-                GridToWorld(currentGridPosition),
+                GridToWorld(startGridPosition),
                 Quaternion.identity,
                 transform
             );
@@ -71,22 +72,30 @@ namespace DungeonCrawler.Rooms
             firstRoom.gameObject.name = "Room_01";
 
             generatedRooms.Add(firstRoom);
-            roomsByGridPosition.Add(currentGridPosition, firstRoom);
-
-            Room currentRoom = firstRoom;
+            roomsByGridPosition.Add(startGridPosition, firstRoom);
+            gridPositionByRoom.Add(firstRoom, startGridPosition);
 
             for (int i = 1; i < roomCount; i++)
             {
-                List<DoorSide> availableDirections =
-                    GetAvailableDirections(currentRoom, currentGridPosition);
+                List<Room> expandableRooms = GetExpandableRooms();
 
-                if (availableDirections.Count == 0)
+                if (expandableRooms.Count == 0)
                 {
                     Debug.LogWarning(
-                        $"No available directions from {currentRoom.RoomId}."
+                        $"No expandable rooms remain. Generated {generatedRooms.Count}/{roomCount} rooms."
                     );
+
                     break;
                 }
+
+                Room currentRoom =
+                    expandableRooms[Random.Range(0, expandableRooms.Count)];
+
+                Vector2Int currentGridPosition =
+                    gridPositionByRoom[currentRoom];
+
+                List<DoorSide> availableDirections =
+                    GetAvailableDirections(currentRoom, currentGridPosition);
 
                 DoorSide exitSide =
                     availableDirections[
@@ -103,9 +112,10 @@ namespace DungeonCrawler.Rooms
 
                 if (chosenPrefab == null)
                 {
-                    Debug.LogError(
-                        $"No prefab has a {entranceSide} door."
+                    Debug.LogWarning(
+                        $"Could not find a room prefab with a {entranceSide} door."
                     );
+
                     break;
                 }
 
@@ -116,19 +126,21 @@ namespace DungeonCrawler.Rooms
                     transform
                 );
 
-                string runtimeId = $"Room_{i + 1:00}";
+                string roomId = $"Room_{i + 1:00}";
 
-                newRoom.SetRoomId(runtimeId);
-                newRoom.gameObject.name = runtimeId;
+                newRoom.SetRoomId(roomId);
+                newRoom.gameObject.name = roomId;
 
-                Door exitDoor = currentRoom.GetDoor(exitSide);
-                Door entranceDoor = newRoom.GetDoor(entranceSide);
+                Door exitDoor =
+                    currentRoom.GetDoor(exitSide);
+
+                Door entranceDoor =
+                    newRoom.GetDoor(entranceSide);
 
                 if (exitDoor == null || entranceDoor == null)
                 {
                     Debug.LogError(
-                        $"Failed to connect {currentRoom.RoomId} " +
-                        $"to {newRoom.RoomId}."
+                        $"Could not link {currentRoom.RoomId} to {roomId}."
                     );
 
                     Destroy(newRoom.gameObject);
@@ -139,9 +151,11 @@ namespace DungeonCrawler.Rooms
 
                 generatedRooms.Add(newRoom);
                 roomsByGridPosition.Add(nextGridPosition, newRoom);
+                gridPositionByRoom.Add(newRoom, nextGridPosition);
 
-                currentRoom = newRoom;
-                currentGridPosition = nextGridPosition;
+                Debug.Log(
+                    $"{currentRoom.RoomId} generated {roomId} to the {exitSide}."
+                );
             }
 
             Debug.Log(
@@ -183,6 +197,22 @@ namespace DungeonCrawler.Rooms
             }
 
             return available;
+        }
+        private List<Room> GetExpandableRooms()
+        {
+            List<Room> expandableRooms = new();
+
+            foreach (Room room in generatedRooms)
+            {
+                Vector2Int gridPosition = gridPositionByRoom[room];
+
+                if (GetAvailableDirections(room, gridPosition).Count > 0)
+                {
+                    expandableRooms.Add(room);
+                }
+            }
+
+            return expandableRooms;
         }
         private bool HasPrefabWithDoor(DoorSide requiredSide)
         {
