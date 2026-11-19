@@ -35,6 +35,12 @@ namespace DungeonCrawler.Tests
             foreach (var go in spawned)
                 if (go != null) Object.Destroy(go);
             spawned.Clear();
+
+            // anything a dying enemy left behind (hearts, armor) must not carry into the next test
+            foreach (var pickup in Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None))
+                Object.Destroy(pickup.gameObject);
+            foreach (var pickup in Object.FindObjectsByType<DungeonCrawler.Loot.ArmorPickup>(FindObjectsSortMode.None))
+                Object.Destroy(pickup.gameObject);
         }
 
         // ---------- who gets hurt ----------
@@ -246,6 +252,9 @@ namespace DungeonCrawler.Tests
             go.AddComponent<CircleCollider2D>().radius = 0.4f;
             go.AddComponent<Health>();
             var enemy = go.AddComponent<Enemy>();
+            // enemies drop a heart 35% of the time when they die. a dropped heart would heal the next test's player
+            // and make the damage checks flaky, so this one never drops anything
+            go.GetComponent<DungeonCrawler.Loot.LootDropper>().DropChance = 0f;
             var contact = go.AddComponent<DamageOnContact>();
             contact.Damage = damage;
             SetField(contact, "knockback", 0f);
