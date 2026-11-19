@@ -47,15 +47,51 @@ namespace DungeonCrawler.Player
         }
 
         // Randomly selects and plays a sound from an array.
+        
         private void PlayRandomSound(AudioClip[] sounds)
         {
             if (sounds == null || sounds.Length == 0)
+            {
+                Debug.LogWarning("PlayerAudio: No sound clips assigned.", this);
                 return;
+            }
 
-            int index = Random.Range(0, sounds.Length);
+            // Only select clips that are actually assigned.
+            int validCount = 0;
 
-            SFXManager.Instance?.PlaySFX(sounds[index]);
+            foreach (AudioClip clip in sounds)
+            {
+                if (clip != null)
+                    validCount++;
+            }
+
+            if (validCount == 0)
+            {
+                Debug.LogWarning("PlayerAudio: All assigned sound clips are null.", this);
+                return;
+            }
+
+            int selected = Random.Range(0, validCount);
+
+            foreach (AudioClip clip in sounds)
+            {
+                if (clip == null)
+                    continue;
+
+                if (selected-- == 0)
+                {
+                    if (SFXManager.Instance == null)
+                    {
+                        Debug.LogWarning("PlayerAudio: SFXManager is missing.", this);
+                        return;
+                    }
+
+                    SFXManager.Instance.PlaySFX(clip);
+                    return;
+                }
+            }
         }
+
 
         private void OnHealthChanged(int current, int max)
         {

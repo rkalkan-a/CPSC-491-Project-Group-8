@@ -1,0 +1,108 @@
+
+name: SOC 2 CC6.1 Access Audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 16 1 * * '
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-policy:
+    name: Validate approved access list
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate policy
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const policy = JSON.parse(fs.readFileSync('security/approved-access.json', 'utf8'));
+            for (const key of ['approved_writers', 'approved_admins']) {
+              const names = policy[key];
+              if (!Array.isArray(names) || names.length === 0) throw new Error(`${key} must be a non-empty list`);
+              if (names.some(x => typeof x !== 'string' || !/^[a-z0-9-]+$/i.test(x))) {
+                throw new Error(`${key} contains an invalid username`);
+              }
+              if (new Set(names.map(x => x.toLowerCase())).size !== names.length) {
+                throw new Error(`${key} has duplicate usernames`);
+              }
+            }
+            const writers = new Set(policy.approved_writers.map(x => x.toLowerCase()));
+            if (policy.approved_admins.some(x => !writers.has(x.toLowerCase()))) {
+              throw new Error('Every admin must also be an approved writer');
+            }
+            core.info('Approved-user list is valid.');
+
+  live-audit:
+    name: Audit actual GitHub permissions
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: validate-policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare current access with policy
+        uses: actions/github-script@v8
+        env:
+          ACCESS_AUDIT_TOKEN: ${{ secrets.ACCESS_AUDIT_TOKEN }}
+        with:
+          github-token: ${{ secrets.ACCESS_AUDIT_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = {
+              checkedAt: new Date().toISOString(),
+              repository: process.env.GITHUB_REPOSITORY,
+              status: 'ERROR', collaborators: [], pendingInvitations: [], violations: []
+            };
+            try {
+              if (!process.env.ACCESS_AUDIT_TOKEN) throw new Error('ACCESS_AUDIT_TOKEN is missing');
+              const policy = JSON.parse(fs.readFileSync('security/approved-access.json', 'utf8'));
+              const writers = new Set(policy.approved_writers.map(x => x.toLowerCase()));
+              const admins = new Set(policy.approved_admins.map(x => x.toLowerCase()));
+              const { owner, repo } = context.repo;
+              const collaborators = await github.paginate(github.rest.repos.listCollaborators, {owner, repo, per_page: 100});
+              const invitations = await github.paginate(github.rest.repos.listInvitations, {owner, repo, per_page: 100});
+              if (collaborators.length === 0) throw new Error('No collaborators returned; cannot verify access');
+              const editRoles = new Set(['write', 'push', 'maintain', 'admin']);
+              const knownRoles = new Set([...editRoles, 'read', 'pull', 'triage']);
+              for (const user of collaborators) {
+                const login = user.login.toLowerCase();
+                const role = String(user.role_name || (user.permissions?.admin ? 'admin' : user.permissions?.maintain ? 'maintain' : user.permissions?.push ? 'write' : user.permissions?.triage ? 'triage' : 'read')).toLowerCase();
+                report.collaborators.push({login: user.login, role});
+                if (!knownRoles.has(role)) report.violations.push(`${user.login}: unrecognized role ${role}`);
+                else if (editRoles.has(role) && !writers.has(login)) report.violations.push(`${user.login}: ${role} access not approved`);
+                if (role === 'admin' && !admins.has(login)) report.violations.push(`${user.login}: admin access not approved`);
+              }
+              for (const invite of invitations) {
+                const recipient = invite.invitee?.login || '[email-only invitation: identity redacted]';
+                const login = invite.invitee?.login?.toLowerCase();
+                const role = String(invite.permissions || '').toLowerCase();
+                report.pendingInvitations.push({recipient, role});
+                if (!knownRoles.has(role)) report.violations.push(`${recipient}: unrecognized invitation role ${role}`);
+                else if (editRoles.has(role) && (!login || !writers.has(login))) report.violations.push(`${recipient}: unapproved ${role} invitation`);
+                if (role === 'admin' && (!login || !admins.has(login))) report.violations.push(`${recipient}: unapproved admin invitation`);
+              }
+              report.status = report.violations.length ? 'FAIL' : 'PASS';
+            } catch (error) {
+              report.error = error.message;
+            } finally {
+              fs.writeFileSync('access-audit-report.json', JSON.stringify(report, null, 2));
+              await core.summary.addHeading('CC6.1 Repository Access Audit')
+                .addRaw(`Result: ${report.status}; findings: ${report.violations.length}`)
+                .write();
+              if (report.status !== 'PASS') core.setFailed(`Audit ${report.status}; review evidence artifact`);
+            }
+      - name: Save audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cc61-access-audit-evidence
+          path: access-audit-report.json
+          if-no-files-found: warn
+          retention-days: 30
