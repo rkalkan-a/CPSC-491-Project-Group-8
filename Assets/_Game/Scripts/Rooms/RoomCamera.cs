@@ -32,7 +32,15 @@ namespace DungeonCrawler.Rooms
         private void OnEnable() => GameEvents.RoomEntered += OnRoomEntered;
         private void OnDisable() => GameEvents.RoomEntered -= OnRoomEntered;
 
-        private void OnRoomEntered(Room room) => FocusRoom(room, smoothTime <= 0f);
+        private void OnRoomEntered(Room room)
+        {
+            bool firstRoom = currentRoom == null;
+
+            FocusRoom(
+                room,
+                firstRoom || smoothTime <= 0f
+            );
+        }
 
         public void FocusRoom(Room room, bool instant = false)
         {

@@ -13,6 +13,10 @@ namespace DungeonCrawler.Rooms
 
         [SerializeField]
         private Vector2 roomSpacing = new Vector2(20f, 13f);
+        [SerializeField] private GameObject floorExitPrefab;
+
+        [SerializeField]
+        private Vector2 floorExitOffset = Vector2.zero;
 
         private readonly List<Room> generatedRooms = new();
         private readonly Dictionary<Vector2Int, Room> roomsByGridPosition = new();
@@ -158,8 +162,40 @@ namespace DungeonCrawler.Rooms
                 );
             }
 
+            SpawnFloorExit();
+
             Debug.Log(
                 $"Generated {generatedRooms.Count} rooms."
+            );
+        }
+
+        private void SpawnFloorExit()
+        {
+            if (floorExitPrefab == null)
+            {
+                Debug.LogWarning("No floor exit prefab assigned.");
+                return;
+            }
+
+            if (generatedRooms.Count == 0)
+                return;
+
+            Room finalRoom =
+                generatedRooms[generatedRooms.Count - 1];
+
+            Vector3 spawnPosition =
+                finalRoom.transform.position +
+                (Vector3)floorExitOffset;
+
+            Instantiate(
+                floorExitPrefab,
+                spawnPosition,
+                Quaternion.identity,
+                finalRoom.transform
+            );
+
+            Debug.Log(
+                $"Floor exit placed in {finalRoom.RoomId}."
             );
         }
 
