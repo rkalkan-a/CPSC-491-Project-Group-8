@@ -68,6 +68,11 @@ public class MainMenuController : MonoBehaviour
         SceneManager.LoadScene("Level_01");
     }
 
+    public void PlayInfiniteMode()
+    {
+        SceneManager.LoadScene("InfiniteMode");
+    }
+
     public void OpenOptions()
     {
         mainMenuPanel.SetActive(false);

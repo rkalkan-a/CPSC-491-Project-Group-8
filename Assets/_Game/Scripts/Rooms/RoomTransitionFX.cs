@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using DungeonCrawler.UI;
+using UnityEngine.SceneManagement;
+using DungeonCrawler.Player;
 
 namespace DungeonCrawler.Rooms
 {
@@ -26,8 +28,13 @@ namespace DungeonCrawler.Rooms
             {
                 var go = new GameObject("RoomTransitionFX");
                 instance = go.AddComponent<RoomTransitionFX>();
+
+                // Keep the transition alive while changing floors/scenes.
+                DontDestroyOnLoad(go);
+
                 instance.Build();
             }
+
             return instance;
         }
 
@@ -136,6 +143,63 @@ namespace DungeonCrawler.Rooms
                 yield return null;
             }
             SetVisible(false);
+        }
+
+        public void LoadSceneWithTransition(
+    string sceneName,
+    Transform oldFocus,
+    float blackHold = 0.35f)
+        {
+            StartCoroutine(
+                LoadSceneRoutine(sceneName, oldFocus, blackHold)
+            );
+        }
+
+        private IEnumerator LoadSceneRoutine(
+            string sceneName,
+            Transform oldFocus,
+            float blackHold)
+        {
+            // Close the iris around the player on the old floor.
+            yield return Close(oldFocus);
+
+            // Hold on black slightly longer than a normal room transition.
+            yield return new WaitForSecondsRealtime(blackHold);
+
+            // Load the next floor.
+            SceneManager.LoadScene(sceneName);
+
+            // Give the new scene a frame to initialize.
+            yield return null;
+
+            // Find the new player created in the new floor.
+            PlayerController newPlayer = null;
+
+            for (int i = 0; i < 60 && newPlayer == null; i++)
+            {
+                newPlayer =
+                    FindFirstObjectByType<PlayerController>();
+
+                if (newPlayer == null)
+                    yield return null;
+            }
+
+            // Small pause while fully black so the new floor can settle.
+            yield return new WaitForSecondsRealtime(0.1f);
+
+            if (newPlayer != null)
+            {
+                // Open the iris around the player on the new floor.
+                yield return Open(newPlayer.transform);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "Floor transition could not find the new player."
+                );
+
+                SetVisible(false);
+            }
         }
     }
 }
