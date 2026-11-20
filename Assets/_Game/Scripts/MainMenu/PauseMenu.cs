@@ -35,7 +35,9 @@ public class PauseMenu : MonoBehaviour
 
     void Update()
     {
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        // no keyboard (controller only, or a headless test run) means there's no Esc to read
+        var keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
         {
             // Escape is closing the chest popup, don't pause too
             if (ChestPanel.Instance != null &&
